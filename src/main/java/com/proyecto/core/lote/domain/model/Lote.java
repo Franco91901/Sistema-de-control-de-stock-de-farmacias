@@ -34,7 +34,7 @@ public class Lote {
     private Sede sede;
 
     @NotBlank(message = "El código de lote es obligatorio")
-    @Column(name = "codigo_lote", nullable = false, length = 50)
+    @Column(name = "codigo_lote", nullable = false, unique = true, length = 50)
     private String codigoLote;
 
     @NotNull(message = "La fecha de caducidad es obligatoria")

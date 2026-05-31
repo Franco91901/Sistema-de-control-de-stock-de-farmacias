@@ -57,7 +57,7 @@ public class GestorController {
         return ResponseEntity.ok(ApiResponse.ok(gestorService.obtenerNotificacionesConNombres()));
     }
 
-    @GetMapping("/notificacion/{id}")
+    @GetMapping("/notificaciones/{id}")
     public ResponseEntity<ApiResponse<NotificacionResponseDTO>> detalleNotificacion(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(notificacionService.obtenerNotificacionPorId(id)));
     }

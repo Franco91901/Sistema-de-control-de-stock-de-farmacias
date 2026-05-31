@@ -26,19 +26,19 @@ public class TransportistaController {
         return ResponseEntity.ok(ApiResponse.ok(service.listarOrdenes(estado, sede)));
     }
 
-    @GetMapping("/{idDetalle}")
-    public ResponseEntity<ApiResponse<OrdenTransportistaDTO>> obtener(@PathVariable Long idDetalle) {
-        OrdenTransportistaDTO dto = service.obtenerDetalle(idDetalle);
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<OrdenTransportistaDTO>> obtener(@PathVariable Long id) {
+        OrdenTransportistaDTO dto = service.obtenerDetalle(id);
         return dto != null
                 ? ResponseEntity.ok(ApiResponse.ok(dto))
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Orden no encontrada"));
     }
 
-    @PutMapping("/{idDetalle}/avanzar")
-    public ResponseEntity<ApiResponse<Void>> avanzar(@PathVariable Long idDetalle) {
-        OrdenTransportistaDTO dto = service.obtenerDetalle(idDetalle);
+    @PutMapping("/{id}/avanzar")
+    public ResponseEntity<ApiResponse<Void>> avanzar(@PathVariable Long id) {
+        OrdenTransportistaDTO dto = service.obtenerDetalle(id);
         if (dto == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Orden no encontrada"));
-        service.avanzarEstado(idDetalle);
+        service.avanzarEstado(id);
         return ResponseEntity.ok(ApiResponse.ok("Estado actualizado", null));
     }
 }

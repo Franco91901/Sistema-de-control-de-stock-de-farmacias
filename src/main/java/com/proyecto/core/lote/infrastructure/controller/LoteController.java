@@ -50,9 +50,9 @@ public class LoteController {
         return ResponseEntity.ok(ApiResponse.ok("Lote eliminado", null));
     }
 
-    @GetMapping("/medicamento/{idMedicamento}")
-    public ResponseEntity<ApiResponse<List<LoteResponseDTO>>> porMedicamento(@PathVariable Long idMedicamento) {
-        return ResponseEntity.ok(ApiResponse.ok(loteService.listarLotesPorMedicamento(idMedicamento)));
+    @GetMapping("/medicamento/{id}")
+    public ResponseEntity<ApiResponse<List<LoteResponseDTO>>> porMedicamento(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(loteService.listarLotesPorMedicamento(id)));
     }
 
     @PostMapping("/{id}/retirar")

@@ -4,28 +4,25 @@ import com.proyecto.core.sede.application.dto.SedeDTO;
 import com.proyecto.core.sede.application.mapper.SedeMapper;
 import com.proyecto.core.sede.domain.model.Sede;
 import com.proyecto.core.sede.domain.repository.SedeRepository;
-import com.proyecto.core.sede.application.service.SedeService;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class SedeServiceImpl implements SedeService {
 
-    @Autowired
-    private SedeRepository sedeRepository;
+    private final SedeRepository sedeRepository;
 
-    @Autowired
-    private SedeMapper sedeMapper;
+    private final SedeMapper sedeMapper;
 
     @Override
     public List<SedeDTO> listarSedes() {
         return sedeRepository.findAll()
                 .stream()
-                .map(sedeMapper::toDTO)
-                .collect(Collectors.toList());
+                .map(sedeMapper::toDTO).toList();
     }
 
     @Override

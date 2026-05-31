@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,8 +35,9 @@ public class JwtService {
 
         Usuario usuario = (Usuario) authentication.getPrincipal();
 
+
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .subject(usuario.getEmail())
+                .subject(Objects.requireNonNull(usuario).getEmail())
                 .issuedAt(now)
                 .expiresAt(now.plus(jwtExpiration, ChronoUnit.MINUTES))
                 .claim("roles", roles)
