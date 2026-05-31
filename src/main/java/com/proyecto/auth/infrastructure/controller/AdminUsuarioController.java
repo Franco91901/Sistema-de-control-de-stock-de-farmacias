@@ -1,74 +1,56 @@
 package com.proyecto.auth.infrastructure.controller;
 
-import java.util.List;
-
+import com.proyecto.auth.application.dto.request.RegisterRequestDTO;
+import com.proyecto.auth.application.dto.response.UsuarioResponseDTO;
+import com.proyecto.auth.application.service.UsuarioService;
+import com.proyecto.shared.dto.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import com.proyecto.auth.application.dto.RegistroUsuarioDTO;
-import com.proyecto.auth.application.dto.UsuarioResponseDTO;
-import com.proyecto.auth.application.service.UsuarioService;
+import java.util.List;
 
-import lombok.RequiredArgsConstructor;
-
-@Controller
-@RequestMapping("/admin/usuarios")
+@RestController
+@RequestMapping("/api/admin/usuarios")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminUsuarioController {
 
     private final UsuarioService usuarioService;
 
-
-    // ================= LISTAR =================
     @GetMapping
-    public String listarUsuarios(Model model) {
-        List<UsuarioResponseDTO> usuarios = usuarioService.listarUsuarios();
-        model.addAttribute("usuarios", usuarios);
-        return "admin/lista";   // ✅ coincide con templates/admin/lista.html
+    public ResponseEntity<ApiResponse<List<UsuarioResponseDTO>>> listar() {
+        return ResponseEntity.ok(ApiResponse.ok(usuarioService.listarUsuarios()));
     }
 
-    // ================= VER DETALLE =================
-    @GetMapping("/ver/{email}")
-    public String verUsuario(@PathVariable String email, Model model) {
-        UsuarioResponseDTO usuario = usuarioService.buscarPorEmail(email);
-        model.addAttribute("usuario", usuario);
-        return "admin/ver";     // ✅ coincide con templates/admin/ver.html
+    @GetMapping("/{email}")
+    public ResponseEntity<ApiResponse<UsuarioResponseDTO>> obtener(@PathVariable String email) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(usuarioService.buscarPorEmail(email)));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+        }
     }
 
-    // ================= FORM EDITAR =================
-    @GetMapping("/editar/{email}")
-    public String mostrarFormularioEditar(@PathVariable String email, Model model) {
-
-        UsuarioResponseDTO usuario = usuarioService.buscarPorEmail(email);
-
-        RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
-        dto.setNombre(usuario.getNombre());
-        dto.setEmail(usuario.getEmail());
-        dto.setTelefono(usuario.getTelefono());
-
-        model.addAttribute("usuarioEmail", email);
-        model.addAttribute("registroUsuarioDTO", dto);
-
-        return "admin/editar";  // ✅ coincide con templates/admin/editar.html
+    @PutMapping("/{email}")
+    public ResponseEntity<ApiResponse<UsuarioResponseDTO>> actualizar(
+            @PathVariable String email, @RequestBody RegisterRequestDTO dto) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(usuarioService.actualizarUsuario(email, dto)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
 
-    // ================= PROCESAR EDICIÓN =================
-    @PostMapping("/editar/{email}")
-    public String actualizarUsuario(
-            @PathVariable String email,
-            @ModelAttribute RegistroUsuarioDTO dto) {
-
-        usuarioService.actualizarUsuario(email, dto);
-        return "redirect:/admin/usuarios";  // ✅ redirige a la lista
-    }
-
-    // ================= ELIMINAR =================
-    @PostMapping("/eliminar/{email}")
-    public String eliminarUsuario(@PathVariable String email) {
-        usuarioService.eliminarUsuario(email);
-        return "redirect:/admin/usuarios";  // ✅ redirige a la lista
+    @DeleteMapping("/{email}")
+    public ResponseEntity<ApiResponse<Void>> eliminar(@PathVariable String email) {
+        try {
+            usuarioService.eliminarUsuario(email);
+            return ResponseEntity.ok(ApiResponse.ok("Usuario eliminado", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
 }

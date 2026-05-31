@@ -4,56 +4,49 @@ import com.proyecto.core.notificacion.application.dto.NotificacionResponseDTO;
 import com.proyecto.core.stock.application.dto.StockPorMedicamentoDto;
 import com.proyecto.core.stock.application.dto.StockPorSedeDto;
 import com.proyecto.core.medicamento.domain.model.Medicamento;
+import com.proyecto.core.medicamento.domain.model.MedicamentoSede;
 import com.proyecto.core.lote.domain.model.Lote;
 import com.proyecto.core.sede.domain.model.Sede;
 import com.proyecto.core.notificacion.domain.model.Notificacion;
 import com.proyecto.core.orden.domain.model.Orden;
 import com.proyecto.core.orden.domain.model.DetalleOrden;
 import com.proyecto.auth.domain.model.Usuario;
+import com.proyecto.core.medicamento.domain.repository.MedicamentoRepository;
+import com.proyecto.core.medicamento.domain.repository.MedicamentoSedeRepository;
 import com.proyecto.core.notificacion.application.mapper.NotificacionMapper;
 import com.proyecto.core.notificacion.domain.repository.NotificacionRepository;
 import com.proyecto.core.orden.domain.repository.OrdenRepository;
 import com.proyecto.core.orden.domain.repository.DetalleOrdenRepository;
-import com.proyecto.core.medicamento.domain.repository.MedicamentoRepository;
 import com.proyecto.core.sede.domain.repository.SedeRepository;
 import com.proyecto.core.lote.domain.repository.LoteRepository;
 import com.proyecto.auth.domain.repository.UsuarioRepository;
+import com.proyecto.core.stock.application.service.FarmaceuticoConstants;
+import com.proyecto.shared.exception.EntityNotFoundException;
+import com.proyecto.shared.exception.ExceptionConstants;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class GestorServiceImpl implements GestorService {
 
-    @Autowired
-    private NotificacionRepository notificacionRepository;
+    private final NotificacionRepository notificacionRepository;
+    private final OrdenRepository ordenRepository;
+    private final DetalleOrdenRepository detalleOrdenRepository;
+    private final MedicamentoRepository medicamentoRepository;
+    private final MedicamentoSedeRepository medicamentoSedeRepository;
+    private final SedeRepository sedeRepository;
+    private final LoteRepository loteRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final NotificacionMapper notificacionMapper;
 
-    @Autowired
-    private OrdenRepository ordenRepository;
-
-    @Autowired
-    private DetalleOrdenRepository detalleOrdenRepository;
-
-    @Autowired
-    private MedicamentoRepository medicamentoRepository;
-
-    @Autowired
-    private SedeRepository sedeRepository;
-
-    @Autowired
-    private LoteRepository loteRepository;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    
-    @Autowired
-    private NotificacionMapper notificacionMapper;
-
-    // ========== STOCK ==========
 
     @Override
     public Integer obtenerStockPorMedicamento(Long idMedicamento) {
@@ -77,8 +70,7 @@ public class GestorServiceImpl implements GestorService {
         return sedeRepository.findAll();
     }
 
-    // ========== NOTIFICACIONES ==========
-    
+
     @Override
     public List<NotificacionResponseDTO> obtenerNotificacionesConNombres() {
         return notificacionRepository.findAll().stream()
@@ -89,8 +81,8 @@ public class GestorServiceImpl implements GestorService {
                 return NotificacionResponseDTO.of(
                         notif.getIdNotificacion(),
                         notif.getMensaje(),
-                        notif.getTipo(),
-                        notif.getEstado(),
+                        notif.getTipo() != null ? notif.getTipo().name() : null,
+                        notif.getEstado() != null ? notif.getEstado().name() : null,
                         notif.getFecha(),
                         med.getNombre(),
                         sede.getNombre()
@@ -98,27 +90,24 @@ public class GestorServiceImpl implements GestorService {
             })
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Notificacion> listarNotificaciones() {
         return notificacionRepository.findAll();
     }
-    
+
     @Override
     public Notificacion obtenerNotificacionPorId(Long idNotificacion) {
-        return notificacionRepository.findById(idNotificacion)
-                .orElse(null);
+        return notificacionRepository.findById(idNotificacion).orElse(null);
     }
-    
+
     public List<NotificacionResponseDTO> listarNotificacionesPorSede(Long idSede) {
-        List<Notificacion> notificaciones = notificacionRepository.findBySedeIdSedeOrderByFechaDesc(idSede);
-        return notificaciones.stream()
+        return notificacionRepository.findBySedeIdSedeOrderByFechaDesc(idSede).stream()
                 .map(notificacionMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    // ========== ÓRDENES ==========
-        
+
     @Override
     @Transactional
     public Orden generarOrdenDesdeNotificacion(Long idGestor, Long idNotificacion, Integer cantidadSolicitada) {
@@ -127,21 +116,27 @@ public class GestorServiceImpl implements GestorService {
         }
 
         Notificacion notif = notificacionRepository.findById(idNotificacion)
-            .orElseThrow(() -> new RuntimeException("Notificación no encontrada"));
+            .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.NOTIFICACION_NO_ENCONTRADA));
+
+        Usuario usuario = usuarioRepository.findById(idGestor)
+            .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.USUARIO_NO_ENCONTRADO));
 
         Orden orden = new Orden();
-        orden.setIdGestor(idGestor); 
+        orden.setUsuario(usuario);
+        orden.setSede(notif.getSede());
+        orden.setTipo(com.proyecto.core.orden.domain.model.TipoOrden.COMPRA);
+        orden.setEstado(com.proyecto.core.orden.domain.model.EstadoOrden.PENDIENTE);
         orden.setFecha(LocalDateTime.now());
         orden = ordenRepository.save(orden);
 
         DetalleOrden detalle = new DetalleOrden();
-        detalle.setOrden(orden); 
-        detalle.setMedicamento(notif.getMedicamento()); 
+        detalle.setOrden(orden);
+        detalle.setMedicamento(notif.getMedicamento());
         detalle.setCantidad(cantidadSolicitada);
-        detalle.setEstado("PENDIENTE");
+        detalle.setEstado(com.proyecto.core.orden.domain.model.EstadoDetalle.PENDIENTE);
         detalleOrdenRepository.save(detalle);
 
-        notif.setEstado("RESUELTA");
+        notif.setEstado(com.proyecto.core.notificacion.domain.model.EstadoNotificacion.RESUELTA);
         notificacionRepository.save(notif);
 
         return orden;
@@ -149,28 +144,26 @@ public class GestorServiceImpl implements GestorService {
 
     @Override
     public List<Orden> listarOrdenesPorGestor(Long idGestor) {
-        return ordenRepository.findByIdGestor(idGestor.intValue());
+        return ordenRepository.findByUsuarioIdUsuario(idGestor);
     }
-    
+
     @Override
     public List<DetalleOrden> obtenerDetallesDeOrden(Long idOrden) {
         return detalleOrdenRepository.findByOrdenIdOrden(idOrden);
     }
-    
+
     @Override
     @Transactional
     public void eliminarOrden(Long idOrden) {
-        detalleOrdenRepository.deleteById(idOrden);
+        detalleOrdenRepository.deleteByOrdenIdOrden(idOrden);
         ordenRepository.deleteById(idOrden);
     }
-
-    // ========== REPORTES (usar tus DTOs con Integer) ==========
 
     @Override
     public List<StockPorSedeDto> obtenerStockPorSedeParaReporte() {
         return sedeRepository.findAll().stream()
                 .map(sede -> new StockPorSedeDto(
-                        sede.getIdSede().intValue(),
+                        sede.getIdSede(),
                         sede.getNombre(),
                         obtenerStockPorSede(sede.getIdSede())
                 ))
@@ -179,23 +172,23 @@ public class GestorServiceImpl implements GestorService {
 
     @Override
     public List<StockPorMedicamentoDto> obtenerStockPorMedicamentoParaReporte() {
-        return medicamentoRepository.findAll().stream()
-                .map(med -> new StockPorMedicamentoDto(
-                        med.getIdMedicamento().intValue(),
-                        med.getNombre(),
-                        med.getSede().getNombre(),
-                        obtenerStockPorMedicamento(med.getIdMedicamento())
+        return medicamentoSedeRepository.findAll().stream()
+                .map(ms -> new StockPorMedicamentoDto(
+                        ms.getMedicamento().getIdMedicamento(),
+                        ms.getMedicamento().getNombre(),
+                        ms.getSede().getNombre(),
+                        ms.getStockTotal()
                 ))
                 .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<com.proyecto.core.notificacion.application.dto.NotificacionDto> obtenerNotificacionesConNombresParaPdf() {
         return notificacionRepository.findAll().stream()
-            .map(notificacionMapper::toDto) // 👈 Usa el mapper corregido
+            .map(notificacionMapper::toDto)
             .collect(Collectors.toList());
     }
-    
+
     public String obtenerNombreMedicamento(Long idMedicamento) {
         return medicamentoRepository.findById(idMedicamento)
                 .map(Medicamento::getNombre)
@@ -204,11 +197,10 @@ public class GestorServiceImpl implements GestorService {
 
     @Override
     public String obtenerNombreSede(Long idSede) {
-        Sede sede = sedeRepository.findById(idSede)
-                .orElseThrow(() -> new IllegalArgumentException("Sede no encontrada"));
-        return sede.getNombre();
+        return sedeRepository.findById(idSede)
+                .map(Sede::getNombre)
+                .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.SEDE_NO_ENCONTRADA));
     }
-    
 
     @Override
     public List<Notificacion> obtenerNotificacionesParaReporte() {
@@ -217,19 +209,22 @@ public class GestorServiceImpl implements GestorService {
 
     @Override
     public List<Orden> obtenerOrdenesParaReporte(Long idGestor) {
-        return ordenRepository.findByIdGestor(idGestor.intValue());
+        return ordenRepository.findByUsuarioIdUsuario(idGestor);
     }
 
     // ========== OTROS ==========
 
     @Override
     public String obtenerNombreUsuario(Long idUsuario) {
-        Usuario usuario = usuarioRepository.findById(idUsuario.intValue()).orElse(null);
+        Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
         return usuario != null ? usuario.getNombre() : "Usuario no encontrado";
     }
-    
+
     @Override
     public List<Medicamento> listarMedicamentosBajoStock(Long idSede) {
-        return medicamentoRepository.findMedicamentosBajoStock(idSede, FarmaceuticoConstants.UMBRAL_BAJO_STOCK);
+        return medicamentoSedeRepository
+                .findMedicamentosBajoStock(idSede, FarmaceuticoConstants.UMBRAL_BAJO_STOCK).stream()
+                .map(MedicamentoSede::getMedicamento)
+                .collect(Collectors.toList());
     }
 }

@@ -1,47 +1,61 @@
 package com.proyecto.auth.infrastructure.security;
 
-import java.util.Date;
+import com.proyecto.auth.domain.model.Usuario;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "miClaveSecreta123456"; // Cambia por algo seguro
-    private static final long EXPIRATION = 1000 * 60 * 60; // 1 hora
+    @Value("${application.security.jwt.expiration}")
+    private int jwtExpiration;
 
-    // Generar token
-    public String generateToken(String email) {
-        return Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
-                .compact();
+    private final JwtEncoder jwtEncoder;
+    private final JwtDecoder jwtDecoder;
+
+    public JwtService(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder) {
+        this.jwtEncoder = jwtEncoder;
+        this.jwtDecoder = jwtDecoder;
     }
 
-    // Extraer email del token
-    public String extractUsername(String token) {
-        return Jwts.parser()
-                .setSigningKey(SECRET_KEY)
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+    public String generateToken(Authentication authentication) {
+        Instant now = Instant.now();
+        String roles = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(" "));
+
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .subject(usuario.getEmail())
+                .issuedAt(now)
+                .expiresAt(now.plus(jwtExpiration, ChronoUnit.MINUTES))
+                .claim("roles", roles)
+                .build();
+
+        return jwtEncoder.encode(
+                JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims)
+        ).getTokenValue();
     }
 
-    // Validar token
-    public boolean isTokenValid(String token, String email) {
-        String tokenEmail = extractUsername(token);
-        return tokenEmail.equals(email) && !isTokenExpired(token);
+    public String getEmailFromToken(String token) {
+        return jwtDecoder.decode(token).getSubject();
     }
 
-    private boolean isTokenExpired(String token) {
-        return Jwts.parser()
-                .setSigningKey(SECRET_KEY)
-                .parseClaimsJws(token)
-                .getBody()
-                .getExpiration()
-                .before(new Date());
+    public boolean validateToken(String token) {
+        try {
+            jwtDecoder.decode(token);
+            return true;
+        } catch (JwtException e) {
+            return false;
+        }
     }
 }

@@ -1,7 +1,7 @@
 package com.proyecto.core.stock.application.dto;
 
 public record StockPorMedicamentoDto(
-    Integer idMedicamento,
+    Long idMedicamento,
     String nombre,
     String nombreSede,
     Integer stockTotal

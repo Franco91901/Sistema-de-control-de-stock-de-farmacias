@@ -1,56 +1,44 @@
 package com.proyecto.core.orden.infrastructure.controller;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import com.proyecto.core.orden.application.dto.OrdenTransportistaDTO;
+import com.proyecto.core.orden.application.service.TransportistaService;
+import com.proyecto.shared.dto.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.proyecto.core.sede.domain.repository.SedeRepository;
-import com.proyecto.core.orden.application.service.TransportistaService;
+import java.util.List;
 
-@Controller
-@RequestMapping("/transportista/ordenes")
+@RestController
+@RequestMapping("/api/transportista/ordenes")
+@RequiredArgsConstructor
 public class TransportistaController {
 
     private final TransportistaService service;
-    private final SedeRepository sedeRepo;
-
-    public TransportistaController(
-            TransportistaService service,
-            SedeRepository sedeRepo) {
-        this.service = service;
-        this.sedeRepo = sedeRepo;
-    }
 
     @GetMapping
-    public String vistaTransportista(
+    public ResponseEntity<ApiResponse<List<OrdenTransportistaDTO>>> listar(
             @RequestParam(required = false) String estado,
-            @RequestParam(required = false) String sede,
-            @RequestParam(required = false) Long idDetalle,
-            Model model) {
-
+            @RequestParam(required = false) String sede) {
         if (estado != null && estado.isEmpty()) estado = null;
         if (sede != null && sede.isEmpty()) sede = null;
-
-        model.addAttribute("ordenes", service.listarOrdenes(estado, sede));
-        model.addAttribute("estadoSeleccionado", estado);
-        model.addAttribute("sedeSeleccionada", sede);
-
-        // 🔽 lista de sedes para el combo
-        model.addAttribute("sedes", sedeRepo.findAll());
-
-        if (idDetalle != null) {
-            model.addAttribute("ordenSeleccionada", service.obtenerDetalle(idDetalle));
-        }
-
-        return "transportista/ordenes";
+        return ResponseEntity.ok(ApiResponse.ok(service.listarOrdenes(estado, sede)));
     }
 
-    @PostMapping("/avanzar/{id}")
-    public String avanzarEstado(
-            @PathVariable("id") Long idDetalle,
-            @RequestParam(required = false) String estado) {
+    @GetMapping("/{idDetalle}")
+    public ResponseEntity<ApiResponse<OrdenTransportistaDTO>> obtener(@PathVariable Long idDetalle) {
+        OrdenTransportistaDTO dto = service.obtenerDetalle(idDetalle);
+        return dto != null
+                ? ResponseEntity.ok(ApiResponse.ok(dto))
+                : ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Orden no encontrada"));
+    }
 
+    @PutMapping("/{idDetalle}/avanzar")
+    public ResponseEntity<ApiResponse<Void>> avanzar(@PathVariable Long idDetalle) {
+        OrdenTransportistaDTO dto = service.obtenerDetalle(idDetalle);
+        if (dto == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Orden no encontrada"));
         service.avanzarEstado(idDetalle);
-        return "redirect:/transportista/ordenes?estado=" + (estado != null ? estado : "");
+        return ResponseEntity.ok(ApiResponse.ok("Estado actualizado", null));
     }
 }

@@ -10,6 +10,7 @@ import java.time.LocalDate;
 
 public record LoteRequestDTO(
     @NotNull(message = "El medicamento es obligatorio") Long idMedicamento,
+    @NotNull(message = "La sede es obligatoria") Long idSede,
     @NotBlank(message = "El código de lote es obligatorio") String codigoLote,
     @NotNull(message = "La fecha de caducidad es obligatoria")
     @FutureOrPresent(message = "La fecha de caducidad debe ser hoy o futura")

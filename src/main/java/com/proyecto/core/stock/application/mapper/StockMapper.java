@@ -1,7 +1,7 @@
 package com.proyecto.core.stock.application.mapper;
 
+import com.proyecto.core.medicamento.domain.model.MedicamentoSede;
 import com.proyecto.core.stock.application.dto.StockMedicamentoResponseDTO;
-import com.proyecto.core.medicamento.domain.model.Medicamento;
 import com.proyecto.core.lote.domain.model.Lote;
 import org.springframework.stereotype.Component;
 
@@ -12,14 +12,17 @@ import java.util.List;
 @Component
 public class StockMapper {
 
-    public StockMedicamentoResponseDTO toStockResponseDTO(Medicamento medicamento, List<Lote> lotes) {
-        if (medicamento == null) return null;
+    public StockMedicamentoResponseDTO toStockResponseDTO(MedicamentoSede medSede, List<Lote> lotes) {
+        if (medSede == null) return null;
         Long idSede = null;
         String nombreSede = null;
-        if (medicamento.getSede() != null) {
-            idSede = medicamento.getSede().getIdSede();
-            nombreSede = medicamento.getSede().getNombre();
+        if (medSede.getSede() != null) {
+            idSede = medSede.getSede().getIdSede();
+            nombreSede = medSede.getSede().getNombre();
         }
+
+        Integer stockTotal = medSede.getStockTotal();
+
         LocalDate hoy = LocalDate.now();
         int lotesProximos = (int) lotes.stream()
             .filter(l -> {
@@ -27,23 +30,26 @@ public class StockMapper {
                 return dias >= 0 && dias <= 30;
             })
             .count();
+
         String estadoStock;
         String claseCSS;
-        if (medicamento.getStockTotal() < 5) {
+
+        if (stockTotal < 5) {
             estadoStock = "CRITICO";
             claseCSS = "danger";
-        } else if (medicamento.getStockTotal() < 10) {
+        } else if (stockTotal < 10) {
             estadoStock = "BAJO";
             claseCSS = "warning";
         } else {
             estadoStock = "NORMAL";
             claseCSS = "success";
         }
+
         return new StockMedicamentoResponseDTO(
-            medicamento.getIdMedicamento(),
-            medicamento.getNombre(),
-            medicamento.getDescripcion(),
-            medicamento.getStockTotal(),
+            medSede.getMedicamento().getIdMedicamento(),
+            medSede.getMedicamento().getNombre(),
+            medSede.getMedicamento().getDescripcion(),
+            stockTotal,
             idSede,
             nombreSede,
             lotes.size(),

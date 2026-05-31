@@ -3,42 +3,41 @@ package com.proyecto.core.medicamento.application.mapper;
 import com.proyecto.core.medicamento.application.dto.MedicamentoRequestDTO;
 import com.proyecto.core.medicamento.application.dto.MedicamentoResponseDTO;
 import com.proyecto.core.medicamento.domain.model.Medicamento;
-import com.proyecto.core.sede.domain.model.Sede;
+import com.proyecto.core.medicamento.domain.model.MedicamentoSede;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MedicamentoMapper {
 
-    public Medicamento toEntity(MedicamentoRequestDTO dto, Sede sede) {
+    public Medicamento toEntity(MedicamentoRequestDTO dto) {
         if (dto == null) return null;
         Medicamento medicamento = new Medicamento();
         medicamento.setNombre(dto.nombre());
         medicamento.setDescripcion(dto.descripcion());
-        medicamento.setSede(sede);
-        medicamento.setStockTotal(0);
         return medicamento;
     }
 
-    public MedicamentoResponseDTO toResponseDTO(Medicamento medicamento) {
-        if (medicamento == null) return null;
+    public MedicamentoResponseDTO toResponseDTO(MedicamentoSede medSede) {
+        if (medSede == null) return null;
+        Medicamento medicamento = medSede.getMedicamento();
         Long idSede = null;
         String nombreSede = null;
         String direccionSede = null;
-        if (medicamento.getSede() != null) {
-            idSede = medicamento.getSede().getIdSede();
-            nombreSede = medicamento.getSede().getNombre();
-            direccionSede = medicamento.getSede().getDireccion();
+        if (medSede.getSede() != null) {
+            idSede = medSede.getSede().getIdSede();
+            nombreSede = medSede.getSede().getNombre();
+            direccionSede = medSede.getSede().getDireccion();
         }
         return new MedicamentoResponseDTO(
             medicamento.getIdMedicamento(),
             medicamento.getNombre(),
             medicamento.getDescripcion(),
-            medicamento.getStockTotal(),
+            medSede.getStockTotal(),
             idSede,
             nombreSede,
             direccionSede,
             null,
-            medicamento.getStockTotal() < 10
+            medSede.getStockTotal() < 10
         );
     }
 

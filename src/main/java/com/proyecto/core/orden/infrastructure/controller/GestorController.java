@@ -1,221 +1,146 @@
 package com.proyecto.core.orden.infrastructure.controller;
 
 import com.proyecto.core.notificacion.application.dto.NotificacionResponseDTO;
-import com.proyecto.core.notificacion.application.dto.NotificacionVistaDTO;
-import com.proyecto.core.orden.domain.model.DetalleOrden;
+import com.proyecto.core.notificacion.application.service.NotificacionService;
+import com.proyecto.core.orden.application.dto.DetalleItemDTO;
+import com.proyecto.core.orden.application.dto.OrdenDetalleDTO;
+import com.proyecto.core.orden.application.dto.OrdenResponseDTO;
+import com.proyecto.core.orden.application.mapper.OrdenMapper;
+import com.proyecto.core.orden.application.service.GestorService;
 import com.proyecto.core.orden.domain.model.Orden;
 import com.proyecto.core.stock.application.dto.StockPorMedicamentoDto;
-import com.proyecto.core.stock.application.dto.StockPorSedeDto;
-import com.proyecto.core.medicamento.domain.model.Medicamento;
-import com.proyecto.core.notificacion.domain.model.Notificacion;
-import com.proyecto.core.orden.application.service.GestorService;
-import com.proyecto.core.notificacion.application.service.NotificacionService;
-
+import com.proyecto.shared.dto.ApiResponse;
+import com.proyecto.shared.exception.EntityNotFoundException;
+import com.proyecto.shared.exception.ExceptionConstants;
+import com.proyecto.shared.security.AuthContext;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import net.sf.jasperreports.engine.*;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import net.sf.jasperreports.engine.*;
-import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
-
-@Controller
-@RequestMapping("/gestor")
+@RestController
+@RequestMapping("/api/gestor")
 @RequiredArgsConstructor
 public class GestorController {
 
-
     private final GestorService gestorService;
-
     private final NotificacionService notificacionService;
+    private final AuthContext authContext;
+    private final OrdenMapper ordenMapper;
 
-    
     @GetMapping("/stock")
-    public String verStockGeneral(Model model) {
-        model.addAttribute("sedes", gestorService.listarSedes());
-
-        List<Medicamento> medicamentos = gestorService.listarMedicamentos();
-        for (Medicamento m : medicamentos) {
-        	m.setNombreSede(gestorService.obtenerNombreSede(m.getSede().getIdSede()));
-            m.setStockTotal(gestorService.obtenerStockPorMedicamento(m.getIdMedicamento()));
-        }
-        model.addAttribute("medicamentos", medicamentos);
-
-        return "stock-general";
+    public ResponseEntity<ApiResponse<List<StockPorMedicamentoDto>>> stockGeneral() {
+        return ResponseEntity.ok(ApiResponse.ok(gestorService.obtenerStockPorMedicamentoParaReporte()));
     }
 
     @GetMapping("/stock/medicamento/{id}")
-    @ResponseBody
-    public Integer stockPorMedicamento(@PathVariable Long id) {
-        return gestorService.obtenerStockPorMedicamento(id);
+    public ResponseEntity<ApiResponse<Integer>> stockPorMedicamento(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(gestorService.obtenerStockPorMedicamento(id)));
     }
 
     @GetMapping("/stock/sede/{id}")
-    @ResponseBody
-    public Integer stockPorSede(@PathVariable Long id) {
-        return gestorService.obtenerStockPorSede(id);
+    public ResponseEntity<ApiResponse<Integer>> stockPorSede(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(gestorService.obtenerStockPorSede(id)));
     }
 
-    
     @GetMapping("/notificaciones")
-    public String listarNotificaciones(Model model) {
-        Long idSede = 1L; // temporal
-        List<NotificacionResponseDTO> notificaciones = notificacionService.listarNotificacionesPorSede(idSede);
-        
-        List<NotificacionVistaDTO> vistaNotificaciones = notificaciones.stream()
-            .map(n -> new NotificacionVistaDTO(
-                n.idNotificacion(), n.mensaje(), n.fechaFormateada(),
-                n.estado(), n.nombreMedicamento(), n.nombreSede()))
-            .collect(Collectors.toList());
-        
-        model.addAttribute("notificaciones", vistaNotificaciones);
-        return "notificaciones";
+    public ResponseEntity<ApiResponse<List<NotificacionResponseDTO>>> notificaciones() {
+        return ResponseEntity.ok(ApiResponse.ok(gestorService.obtenerNotificacionesConNombres()));
     }
 
-    
     @GetMapping("/notificacion/{id}")
-    @ResponseBody
-    public Notificacion detalleNotificacion(@PathVariable Long id) {
-        return gestorService.obtenerNotificacionPorId(id);
+    public ResponseEntity<ApiResponse<NotificacionResponseDTO>> detalleNotificacion(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(notificacionService.obtenerNotificacionPorId(id)));
     }
-
-    
 
     @PostMapping("/ordenes/generar")
-    public String generarOrden(
-            @RequestParam Long idNotificacion,
-            @RequestParam Integer cantidad,
-            HttpSession session,
-            RedirectAttributes redirectAttrs) {
-
-        Long idGestor = (Long) session.getAttribute("idUsuario");
-        if (idGestor == null) {
-            idGestor = 3L; // modo prueba
-            System.out.println("⚠️ Modo prueba: Usando ID Gestor = 3");
-        }
-
-        try {
-            gestorService.generarOrdenDesdeNotificacion(idGestor, idNotificacion, cantidad);
-            redirectAttrs.addFlashAttribute("mensaje", "¡Orden generada exitosamente!");
-        } catch (Exception e) {
-            redirectAttrs.addFlashAttribute("error", "Error al generar la orden: " + e.getMessage());
-        }
-
-        return "redirect:/gestor/notificaciones";
+    public ResponseEntity<ApiResponse<Long>> generarOrden(
+            @RequestParam Long idNotificacion, @RequestParam Integer cantidad) {
+        Orden orden = gestorService.generarOrdenDesdeNotificacion(
+                authContext.getIdUsuario(), idNotificacion, cantidad);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Orden generada", orden.getIdOrden()));
     }
-
-    // ==============================
-    // 3.4: ÓRDENES GENERADAS
-    // ==============================
 
     @GetMapping("/ordenes")
-    public String listarOrdenes(HttpSession session, Model model) {
-        Long idGestor = (Long) session.getAttribute("idUsuario");
-        if (idGestor == null) idGestor = 3L;
-        model.addAttribute("ordenes", gestorService.listarOrdenesPorGestor(idGestor));
-        return "ordenes";
+    public ResponseEntity<ApiResponse<List<OrdenResponseDTO>>> listarOrdenes() {
+        List<OrdenResponseDTO> ordenes = gestorService.listarOrdenesPorGestor(authContext.getIdUsuario())
+                .stream().map(ordenMapper::toResponseDTO).toList();
+        return ResponseEntity.ok(ApiResponse.ok(ordenes));
     }
-    
-    @GetMapping("/order/{id}")
-    public String verDetalleOrden(@PathVariable Long id, HttpSession session, Model model) {
-        Long idGestor = (Long) session.getAttribute("idUsuario");
-        if (idGestor == null) idGestor = 3L;
 
-        Orden orden = gestorService.listarOrdenesPorGestor(idGestor).stream()
-                .filter(o -> o.getIdOrden().equals(id)) // 👈 Ya es Long, sin .intValue()
+    @GetMapping("/ordenes/{id}")
+    public ResponseEntity<ApiResponse<OrdenDetalleDTO>> detalleOrden(@PathVariable Long id) {
+        Orden orden = gestorService.listarOrdenesPorGestor(authContext.getIdUsuario()).stream()
+                .filter(o -> o.getIdOrden().equals(id))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.ORDEN_NO_ENCONTRADA));
 
-        if (orden == null) {
-            model.addAttribute("error", "Orden no encontrada");
-            return "redirect:/gestor/ordenes";
-        }
+        List<DetalleItemDTO> items = gestorService.obtenerDetallesDeOrden(id).stream()
+                .map(d -> new DetalleItemDTO(
+                    gestorService.obtenerNombreMedicamento(d.getMedicamento().getIdMedicamento()),
+                    d.getCantidad(),
+                    d.getEstado() != null ? d.getEstado().name() : null))
+                .toList();
 
-        model.addAttribute("orden", orden);
-        model.addAttribute("nombreGestor", gestorService.obtenerNombreUsuario(orden.getIdGestor()));
-
-        List<Map<String, Object>> detalles = new ArrayList<>();
-        for (DetalleOrden d : gestorService.obtenerDetallesDeOrden(id)) { // 👈 Ya es Long
-            detalles.add(Map.of(
-                "nombreMedicamento", gestorService.obtenerNombreMedicamento(d.getMedicamento().getIdMedicamento()), // ✅ Corregido
-                "cantidad", d.getCantidad(),
-                "estado", d.getEstado()
-            ));
-        }
-        model.addAttribute("detalles", detalles);
-
-        return "detalle-orden";
-    }
-    
-    @PostMapping("/ordenes/eliminar/{id}")
-    public String eliminarOrden(@PathVariable Long id, RedirectAttributes redirectAttrs) {
-        try {
-            gestorService.eliminarOrden(id);
-            redirectAttrs.addFlashAttribute("mensaje", "Orden eliminada correctamente");
-        } catch (Exception e) {
-            redirectAttrs.addFlashAttribute("error", "No se pudo eliminar la orden");
-        }
-        return "redirect:/gestor/ordenes";
+        OrdenDetalleDTO dto = new OrdenDetalleDTO(
+            orden.getIdOrden(),
+            orden.getUsuario() != null ? orden.getUsuario().getNombre() : "",
+            orden.getTipo() != null ? orden.getTipo().name() : null,
+            orden.getEstado() != null ? orden.getEstado().name() : null,
+            orden.getFecha(),
+            orden.getSede() != null ? orden.getSede().getNombre() : "",
+            items
+        );
+        return ResponseEntity.ok(ApiResponse.ok(dto));
     }
 
-    // ==============================
-    // REPORTES PDF
-    // ==============================
+    @DeleteMapping("/ordenes/{id}")
+    public ResponseEntity<ApiResponse<Void>> eliminarOrden(@PathVariable Long id) {
+        gestorService.eliminarOrden(id);
+        return ResponseEntity.ok(ApiResponse.ok("Orden eliminada", null));
+    }
+
+    // ========== REPORTES PDF ==========
 
     @GetMapping("/reportes/stock-sede/pdf")
-    public void generarReporteStockPorSede(HttpServletResponse response) throws Exception {
-        List<StockPorSedeDto> data = gestorService.obtenerStockPorSedeParaReporte();
-        generatePdf("stock_por_sede.jrxml", "Stock Por Sede", data, response);
+    public void reporteStockSede(HttpServletResponse response) throws Exception {
+        generatePdf("stock_por_sede.jrxml", "Stock Por Sede", gestorService.obtenerStockPorSedeParaReporte(), response);
     }
 
     @GetMapping("/reportes/stock-medicamento/pdf")
-    public void generarReporteStockPorMedicamento(HttpServletResponse response) throws Exception {
-        List<StockPorMedicamentoDto> data = gestorService.obtenerStockPorMedicamentoParaReporte();
-        generatePdf("stock_por_medicamento.jrxml", "Stock Por Medicamento", data, response);
+    public void reporteStockMedicamento(HttpServletResponse response) throws Exception {
+        generatePdf("stock_por_medicamento.jrxml", "Stock Por Medicamento", gestorService.obtenerStockPorMedicamentoParaReporte(), response);
     }
 
     @GetMapping("/reportes/notificaciones/pdf")
-    public void generarReporteNotificaciones(HttpServletResponse response) throws Exception {
-        List<com.proyecto.core.notificacion.application.dto.NotificacionDto> data = gestorService.obtenerNotificacionesConNombresParaPdf();
-        generatePdf("notificaciones.jrxml", "Notificaciones", data, response);
+    public void reporteNotificaciones(HttpServletResponse response) throws Exception {
+        generatePdf("notificaciones.jrxml", "Notificaciones", gestorService.obtenerNotificacionesConNombresParaPdf(), response);
     }
 
     @GetMapping("/reportes/ordenes/pdf")
-    public void generarReporteOrdenes(HttpServletResponse response) throws Exception {
-        Long idGestor = 3L;
-        List<Orden> data = gestorService.obtenerOrdenesParaReporte(idGestor);
-        generatePdf("ordenes.jrxml", "Órdenes", data, response);
+    public void reporteOrdenes(HttpServletResponse response) throws Exception {
+        generatePdf("ordenes.jrxml", "Órdenes", gestorService.obtenerOrdenesParaReporte(authContext.getIdUsuario()), response);
     }
 
     private void generatePdf(String jrxmlFile, String title, List<?> data, HttpServletResponse response) throws Exception {
         InputStream inputStream = getClass().getClassLoader().getResourceAsStream("reports/" + jrxmlFile);
-        if (inputStream == null) {
-            throw new FileNotFoundException("Plantilla no encontrada: " + jrxmlFile);
-        }
-
-        JasperReport jasperReport = JasperCompileManager.compileReport(inputStream);
-        JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(data);
-
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("Title", title);
-
-        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
-
+        if (inputStream == null) throw new FileNotFoundException("Plantilla no encontrada: " + jrxmlFile);
+        JasperReport report = JasperCompileManager.compileReport(inputStream);
+        Map<String, Object> params = new HashMap<>();
+        params.put("Title", title);
+        JasperPrint print = JasperFillManager.fillReport(report, params, new JRBeanCollectionDataSource(data));
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "inline; filename=" + title.replace(" ", "_") + ".pdf");
-
-        JasperExportManager.exportReportToPdfStream(jasperPrint, response.getOutputStream());
+        JasperExportManager.exportReportToPdfStream(print, response.getOutputStream());
     }
 }

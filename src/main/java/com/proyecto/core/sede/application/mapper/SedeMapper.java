@@ -15,9 +15,9 @@ public class SedeMapper {
     public Sede toEntity(SedeDTO dto) {
         if (dto == null) return null;
         Sede sede = new Sede();
-        sede.setIdSede(dto.getIdSede());
-        sede.setNombre(dto.getNombre());
-        sede.setDireccion(dto.getDireccion());
+        sede.setIdSede(dto.idSede());
+        sede.setNombre(dto.nombre());
+        sede.setDireccion(dto.direccion());
         return sede;
     }
 }

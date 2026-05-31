@@ -1,9 +1,11 @@
 package com.proyecto.core.notificacion.application.mapper;
 
+import com.proyecto.core.medicamento.domain.model.MedicamentoSede;
 import com.proyecto.core.notificacion.application.dto.NotificacionDto;
 import com.proyecto.core.notificacion.application.dto.NotificacionResponseDTO;
+import com.proyecto.core.notificacion.domain.model.EstadoNotificacion;
 import com.proyecto.core.notificacion.domain.model.Notificacion;
-import com.proyecto.core.medicamento.domain.model.Medicamento;
+import com.proyecto.core.notificacion.domain.model.TipoNotificacion;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -17,11 +19,9 @@ public class NotificacionMapper {
         if (n == null) return null;
         Long idMedicamento = null;
         String nombreMedicamento = null;
-        Integer stockMedicamento = null;
         if (n.getMedicamento() != null) {
             idMedicamento = n.getMedicamento().getIdMedicamento();
             nombreMedicamento = n.getMedicamento().getNombre();
-            stockMedicamento = n.getMedicamento().getStockTotal();
         }
         Long idSede = null;
         String nombreSede = null;
@@ -34,26 +34,26 @@ public class NotificacionMapper {
         return new NotificacionResponseDTO(
             n.getIdNotificacion(),
             n.getMensaje(),
-            n.getTipo(),
-            n.getEstado(),
+            n.getTipo() != null ? n.getTipo().name() : null,
+            n.getEstado() != null ? n.getEstado().name() : null,
             fechaStr,
             fechaFormateada,
             idMedicamento,
             nombreMedicamento,
-            stockMedicamento,
+            null,
             idSede,
             nombreSede
         );
     }
 
-    public Notificacion toEntityAuto(String mensaje, String tipo, Medicamento medicamento) {
-        if (medicamento == null) return null;
+    public Notificacion toEntityAuto(String mensaje, TipoNotificacion tipo, MedicamentoSede medSede) {
+        if (medSede == null) return null;
         Notificacion notificacion = new Notificacion();
-        notificacion.setMedicamento(medicamento);
-        notificacion.setSede(medicamento.getSede());
+        notificacion.setMedicamento(medSede.getMedicamento());
+        notificacion.setSede(medSede.getSede());
         notificacion.setMensaje(mensaje);
         notificacion.setTipo(tipo);
-        notificacion.setEstado("PENDIENTE");
+        notificacion.setEstado(EstadoNotificacion.PENDIENTE);
         return notificacion;
     }
 
@@ -65,6 +65,6 @@ public class NotificacionMapper {
         Integer id = n.getIdNotificacion() != null ? n.getIdNotificacion().intValue() : null;
         String nombreMedicamento = n.getMedicamento() != null ? n.getMedicamento().getNombre() : null;
         String nombreSede = n.getSede() != null ? n.getSede().getNombre() : null;
-        return new NotificacionDto(id, n.getMensaje(), n.getFecha(), n.getEstado(), nombreMedicamento, nombreSede);
+        return new NotificacionDto(id, n.getMensaje(), n.getFecha(), n.getEstado().name(), nombreMedicamento, nombreSede);
     }
 }

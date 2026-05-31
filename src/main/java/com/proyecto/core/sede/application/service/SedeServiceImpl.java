@@ -45,8 +45,8 @@ public class SedeServiceImpl implements SedeService {
     public SedeDTO actualizarSede(Long idSede, SedeDTO dto) {
         return sedeRepository.findById(idSede)
                 .map(sede -> {
-                    sede.setNombre(dto.getNombre());
-                    sede.setDireccion(dto.getDireccion());
+                    sede.setNombre(dto.nombre());
+                    sede.setDireccion(dto.direccion());
                     return sedeMapper.toDTO(sedeRepository.save(sede));
                 }).orElse(null);
     }

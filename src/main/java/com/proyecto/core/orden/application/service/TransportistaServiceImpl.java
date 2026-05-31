@@ -1,15 +1,15 @@
 package com.proyecto.core.orden.application.service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.proyecto.core.orden.application.dto.OrdenTransportistaDTO;
 import com.proyecto.core.orden.application.mapper.OrdenTransportistaMapper;
 import com.proyecto.core.orden.domain.model.DetalleOrden;
+import com.proyecto.core.orden.domain.model.EstadoDetalle;
 import com.proyecto.core.orden.domain.repository.DetalleOrdenRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TransportistaServiceImpl implements TransportistaService {
@@ -22,8 +22,7 @@ public class TransportistaServiceImpl implements TransportistaService {
 
     @Override
     public List<OrdenTransportistaDTO> listarOrdenes(String estado, String sede) {
-        return repo.listarPorEstadoYSede(estado, sede)
-                   .stream()
+        return repo.listarPorEstadoYSede(estado, sede).stream()
                    .map(OrdenTransportistaMapper::toDTO)
                    .collect(Collectors.toList());
     }
@@ -38,19 +37,12 @@ public class TransportistaServiceImpl implements TransportistaService {
     @Override
     public void avanzarEstado(Long idDetalle) {
         DetalleOrden d = repo.findById(idDetalle).orElseThrow();
-
         switch (d.getEstado()) {
-            case "PENDIENTE":
-                d.setEstado("EN PREPARACION");
-                break;
-            case "EN PREPARACION":
-                d.setEstado("EN RUTA");
-                break;
-            case "EN RUTA":
-                d.setEstado("ENTREGADO");
-                break;
+            case PENDIENTE      -> d.setEstado(EstadoDetalle.EN_PREPARACION);
+            case EN_PREPARACION -> d.setEstado(EstadoDetalle.EN_RUTA);
+            case EN_RUTA        -> d.setEstado(EstadoDetalle.ENTREGADO);
+            default             -> {} // ENTREGADO: no avanza más
         }
-
         repo.save(d);
     }
 }

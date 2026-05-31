@@ -1,124 +1,51 @@
 package com.proyecto.auth.infrastructure.config;
 
+import com.proyecto.auth.infrastructure.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-
-import com.proyecto.auth.application.service.UsuarioDetailsServiceImpl;
-
-import lombok.RequiredArgsConstructor;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
-@RequiredArgsConstructor
+@EnableWebSecurity
 public class SecurityConfig {
 
-    private final UsuarioDetailsServiceImpl usuarioDetailsService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsConfigurationSource corsConfigurationSource;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          CorsConfigurationSource corsConfigurationSource) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.corsConfigurationSource = corsConfigurationSource;
+    }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) {
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.disable()) // Deshabilitado a menos que uses frontend separado
-
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session
+                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // ---------- RUTAS PÚBLICAS ----------
-                .requestMatchers(
-                    "/api/usuarios/login-form",
-                    "/api/usuarios/registro-form",
-                    "/css/**",
-                    "/js/**",
-                    "/images/**"
-                ).permitAll()
-
-                // ---------- TODAS LAS DEMÁS RUTAS REQUIEREN AUTENTICACIÓN ----------
-                .anyRequest().authenticated()
+                    .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
+                    .anyRequest().authenticated()
             )
-
-            // ---------- LOGIN ----------
-            .formLogin(form -> form
-                .loginPage("/api/usuarios/login-form")
-                .loginProcessingUrl("/login")
-                .usernameParameter("email")
-                .passwordParameter("password")
-                .defaultSuccessUrl("/api/usuarios/home", true)
-                .failureUrl("/api/usuarios/login-form?error")
-                .permitAll()
-            )
-
-            // ---------- LOGOUT ----------
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/api/usuarios/login-form?logout")
-                .permitAll()
-            );
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder authBuilder =
-                http.getSharedObject(AuthenticationManagerBuilder.class);
-
-        authBuilder
-            .userDetailsService(usuarioDetailsService)
-            .passwordEncoder(passwordEncoder());
-
-        return authBuilder.build();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)  {
+        return configuration.getAuthenticationManager();
     }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-    
-    
-    
-    
-   /////to rest aapi//////
-   
-//    private final UsuarioDetailsServiceImpl usuarioDetailsService;
-//
-//    @Bean
-//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-//        http
-//            .csrf(csrf -> csrf.disable())   // deshabilita CSRF
-//            .cors(cors -> cors.disable())   // deshabilita CORS
-//            .authorizeHttpRequests(auth -> auth
-//                .anyRequest().permitAll()   // permite todas las rutas sin autenticación
-//            )
-//            .formLogin(form -> form.disable()); // deshabilita login por formulario
-//
-//        return http.build();
-//    }
-//
-//    @Bean
-//    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-//        AuthenticationManagerBuilder authBuilder =
-//                http.getSharedObject(AuthenticationManagerBuilder.class);
-//
-//        authBuilder
-//            .userDetailsService(usuarioDetailsService)
-//            .passwordEncoder(passwordEncoder());
-//
-//        return authBuilder.build();
-//    }
-//
-//    @Bean
-//    public PasswordEncoder passwordEncoder() {
-//        return new BCryptPasswordEncoder();
-//    }
-//
-//    
-//    
-    
-    
-     
-    
-    
 }

@@ -1,10 +1,15 @@
 package com.proyecto.core.orden.domain.model;
 
+import com.proyecto.auth.domain.model.Usuario;
+import com.proyecto.core.sede.domain.model.Sede;
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "orden")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class Orden {
 
     @Id
@@ -12,19 +17,26 @@ public class Orden {
     @Column(name = "id_orden")
     private Long idOrden;
 
-    @Column(name = "id_gestor", nullable = false)
-    private Long idGestor;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario", nullable = false)
+    private Usuario usuario;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_sede", nullable = false)
+    private Sede sede;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private TipoOrden tipo = TipoOrden.COMPRA;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private EstadoOrden estado = EstadoOrden.PENDIENTE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_sede_destino")
+    private Sede sedeDestino;
 
     @Column(nullable = false)
     private LocalDateTime fecha;
-
-    // Getters y Setters
-    public Long getIdOrden() { return idOrden; }
-    public void setIdOrden(Long idOrden) { this.idOrden = idOrden; }
-
-    public Long getIdGestor() { return idGestor; }
-    public void setIdGestor(Long idGestor) { this.idGestor = idGestor; }
-
-    public LocalDateTime getFecha() { return fecha; }
-    public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }
 }

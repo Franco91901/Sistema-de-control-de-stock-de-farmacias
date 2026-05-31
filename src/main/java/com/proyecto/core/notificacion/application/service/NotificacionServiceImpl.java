@@ -1,13 +1,16 @@
 package com.proyecto.core.notificacion.application.service;
 
+import com.proyecto.core.lote.domain.model.Lote;
+import com.proyecto.core.lote.domain.repository.LoteRepository;
+import com.proyecto.core.medicamento.domain.model.MedicamentoSede;
+import com.proyecto.core.medicamento.domain.repository.MedicamentoSedeRepository;
 import com.proyecto.core.notificacion.application.dto.NotificacionResponseDTO;
 import com.proyecto.core.notificacion.application.mapper.NotificacionMapper;
-import com.proyecto.core.lote.domain.model.Lote;
-import com.proyecto.core.medicamento.domain.model.Medicamento;
+import com.proyecto.core.notificacion.domain.model.EstadoNotificacion;
 import com.proyecto.core.notificacion.domain.model.Notificacion;
+import com.proyecto.core.notificacion.domain.model.TipoNotificacion;
 import com.proyecto.core.notificacion.domain.repository.NotificacionRepository;
-import com.proyecto.core.medicamento.domain.repository.MedicamentoRepository;
-import com.proyecto.core.lote.domain.repository.LoteRepository;
+import com.proyecto.core.stock.application.service.FarmaceuticoConstants;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,140 +23,113 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class NotificacionServiceImpl implements NotificacionService {
-    
+
     private final NotificacionRepository notificacionRepository;
-    private final MedicamentoRepository medicamentoRepository;
+    private final MedicamentoSedeRepository medicamentoSedeRepository;
     private final LoteRepository loteRepository;
     private final NotificacionMapper notificacionMapper;
-    
+
     @Override
     public List<NotificacionResponseDTO> listarNotificacionesPorSede(Long idSede) {
-        // Usa el método que ya ordena por fecha descendente
-        List<Notificacion> notificaciones = notificacionRepository.findBySedeIdSedeOrderByFechaDesc(idSede);
-        return notificaciones.stream()
-                .map(notificacionMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        return notificacionRepository.findBySedeIdSedeOrderByFechaDesc(idSede).stream()
+                .map(notificacionMapper::toResponseDTO).collect(Collectors.toList());
     }
-    
+
     @Override
     public List<NotificacionResponseDTO> listarNotificacionesPendientes(Long idSede) {
-        // Usa el método que ya ordena por fecha descendente
-        List<Notificacion> notificaciones = notificacionRepository.findBySedeIdSedeAndEstadoOrderByFechaDesc(idSede, FarmaceuticoConstants.ESTADO_NOTIF_PENDIENTE);
-        return notificaciones.stream()
-                .map(notificacionMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        return notificacionRepository.findBySedeIdSedeAndEstadoOrderByFechaDesc(idSede, EstadoNotificacion.PENDIENTE).stream()
+                .map(notificacionMapper::toResponseDTO).collect(Collectors.toList());
     }
-    
+
     @Override
-    public List<NotificacionResponseDTO> listarNotificacionesPorTipo(Long idSede, String tipo) {
-        List<Notificacion> notificaciones = notificacionRepository.findBySedeIdSedeAndTipo(idSede, tipo);
-        return notificaciones.stream()
-                .map(notificacionMapper::toResponseDTO)
-                .collect(Collectors.toList());
+    public List<NotificacionResponseDTO> listarNotificacionesPorTipo(Long idSede, TipoNotificacion tipo) {
+        return notificacionRepository.findBySedeIdSedeAndTipo(idSede, tipo).stream()
+                .map(notificacionMapper::toResponseDTO).collect(Collectors.toList());
     }
-    
+
     @Override
     public NotificacionResponseDTO obtenerNotificacionPorId(Long idNotificacion) {
         Notificacion notificacion = notificacionRepository.findById(idNotificacion)
-                .orElseThrow(() -> new IllegalArgumentException("Notificación no encontrada"));
+                .orElseThrow(() -> new com.proyecto.shared.exception.EntityNotFoundException(
+                        com.proyecto.shared.exception.ExceptionConstants.NOTIFICACION_NO_ENCONTRADA));
         return notificacionMapper.toResponseDTO(notificacion);
     }
-    
+
     @Override
     @Transactional
-    public void verificarNotificacionBajoStock(Medicamento medicamento) {
-        if (medicamento == null) return;
-        
-        boolean bajoStock = medicamento.getStockTotal() < FarmaceuticoConstants.UMBRAL_BAJO_STOCK;
-        String tipo = FarmaceuticoConstants.TIPO_NOTIF_BAJO_STOCK;
-        
-        // Buscar si ya existe una notificación pendiente de bajo stock para este medicamento
-        List<Notificacion> notificacionesExistentes = notificacionRepository
-                .findByMedicamentoIdMedicamento(medicamento.getIdMedicamento());
-        
-        boolean existeNotifPendiente = notificacionesExistentes.stream()
-                .anyMatch(n -> n.getTipo().equals(tipo) && 
-                              n.getEstado().equals(FarmaceuticoConstants.ESTADO_NOTIF_PENDIENTE));
-        
-        if (bajoStock && !existeNotifPendiente) {
-            // Crear nueva notificación de bajo stock
-            String mensaje = String.format("Medicamento %s tiene stock bajo: %d unidades (mínimo: %d)",
-                    medicamento.getNombre(), medicamento.getStockTotal(), FarmaceuticoConstants.UMBRAL_BAJO_STOCK);
-            
-            Notificacion notificacion = notificacionMapper.toEntityAuto(mensaje, tipo, medicamento);
-            notificacionRepository.save(notificacion);
-            
-        } else if (!bajoStock && existeNotifPendiente) {
-            // Marcar como ATENDIDA si ya no está bajo stock
-            notificacionesExistentes.stream()
-                    .filter(n -> n.getTipo().equals(tipo) && 
-                               n.getEstado().equals(FarmaceuticoConstants.ESTADO_NOTIF_PENDIENTE))
+    public void verificarNotificacionBajoStock(MedicamentoSede medSede) {
+        if (medSede == null) return;
+
+        boolean bajoStock = medSede.getStockTotal() < FarmaceuticoConstants.UMBRAL_BAJO_STOCK;
+        Long idMedicamento = medSede.getMedicamento().getIdMedicamento();
+
+        List<Notificacion> existentes = notificacionRepository.findByMedicamentoIdMedicamento(idMedicamento);
+        boolean existePendiente = existentes.stream()
+                .anyMatch(n -> n.getTipo() == TipoNotificacion.BAJO_STOCK
+                            && n.getEstado() == EstadoNotificacion.PENDIENTE);
+
+        if (bajoStock && !existePendiente) {
+            String mensaje = String.format("Medicamento %s tiene stock bajo en sede %s: %d unidades (mínimo: %d)",
+                    medSede.getMedicamento().getNombre(), medSede.getSede().getNombre(),
+                    medSede.getStockTotal(), FarmaceuticoConstants.UMBRAL_BAJO_STOCK);
+            notificacionRepository.save(notificacionMapper.toEntityAuto(mensaje, TipoNotificacion.BAJO_STOCK, medSede));
+
+        } else if (!bajoStock && existePendiente) {
+            existentes.stream()
+                    .filter(n -> n.getTipo() == TipoNotificacion.BAJO_STOCK
+                              && n.getEstado() == EstadoNotificacion.PENDIENTE)
                     .forEach(n -> {
-                        n.setEstado(FarmaceuticoConstants.ESTADO_NOTIF_ATENDIDA);
+                        n.setEstado(EstadoNotificacion.ATENDIDA);
                         notificacionRepository.save(n);
                     });
         }
     }
-    
+
     @Override
     @Transactional
     public void verificarNotificacionCaducidad(Lote lote) {
         if (lote == null) return;
-        
+
         LocalDate hoy = LocalDate.now();
         long diasParaCaducar = ChronoUnit.DAYS.between(hoy, lote.getFechaCaducidad());
-        
         boolean proximoCaducar = diasParaCaducar <= FarmaceuticoConstants.DIAS_ALERTA_CADUCIDAD && diasParaCaducar >= 0;
-        String tipo = FarmaceuticoConstants.TIPO_NOTIF_PROXIMO_CADUCAR;
-        
-        // Buscar notificaciones existentes para este lote
-        List<Notificacion> notificacionesExistentes = notificacionRepository
-                .findByMedicamentoIdMedicamento(lote.getMedicamento().getIdMedicamento());
-        
-        boolean existeNotifPendiente = notificacionesExistentes.stream()
-                .anyMatch(n -> n.getTipo().equals(tipo) && 
-                              n.getEstado().equals(FarmaceuticoConstants.ESTADO_NOTIF_PENDIENTE) &&
-                              n.getMensaje().contains(lote.getCodigoLote()));
-        
-        if (proximoCaducar && !existeNotifPendiente) {
-            // Crear nueva notificación de próxima caducidad
+        Long idMedicamento = lote.getMedicamento().getIdMedicamento();
+
+        List<Notificacion> existentes = notificacionRepository.findByMedicamentoIdMedicamento(idMedicamento);
+        boolean existePendiente = existentes.stream()
+                .anyMatch(n -> n.getTipo() == TipoNotificacion.PROXIMO_CADUCAR
+                            && n.getEstado() == EstadoNotificacion.PENDIENTE
+                            && n.getMensaje().contains(lote.getCodigoLote()));
+
+        if (proximoCaducar && !existePendiente) {
             String mensaje = String.format("Lote %s del medicamento %s caduca en %d días (Caduca: %s)",
-                    lote.getCodigoLote(), lote.getMedicamento().getNombre(), 
+                    lote.getCodigoLote(), lote.getMedicamento().getNombre(),
                     diasParaCaducar, lote.getFechaCaducidad());
-            
-            Notificacion notificacion = notificacionMapper.toEntityAuto(mensaje, tipo, lote.getMedicamento());
-            notificacionRepository.save(notificacion);
+            medicamentoSedeRepository
+                    .findByMedicamentoIdMedicamentoAndSedeIdSede(idMedicamento, lote.getSede().getIdSede())
+                    .ifPresent(ms -> notificacionRepository.save(
+                            notificacionMapper.toEntityAuto(mensaje, TipoNotificacion.PROXIMO_CADUCAR, ms)));
         }
     }
-    
+
     @Override
     @Transactional
     public void generarNotificacionesAutomaticas(Long idSede) {
-        // Verificar medicamentos con bajo stock
-        List<Medicamento> medicamentosBajoStock = medicamentoRepository
-                .findMedicamentosBajoStock(idSede, FarmaceuticoConstants.UMBRAL_BAJO_STOCK);
-        
-        for (Medicamento medicamento : medicamentosBajoStock) {
-            verificarNotificacionBajoStock(medicamento);
-        }
-        
-        // Verificar lotes próximos a caducar
+        medicamentoSedeRepository.findMedicamentosBajoStock(idSede, FarmaceuticoConstants.UMBRAL_BAJO_STOCK)
+                .forEach(this::verificarNotificacionBajoStock);
+
         LocalDate hoy = LocalDate.now();
-        LocalDate fechaLimite = hoy.plusDays(FarmaceuticoConstants.DIAS_ALERTA_CADUCIDAD);
-        
-        List<Lote> lotesProximos = loteRepository.findLotesProximosCaducar(idSede, hoy, fechaLimite);
-        for (Lote lote : lotesProximos) {
-            verificarNotificacionCaducidad(lote);
-        }
+        loteRepository.findLotesProximosCaducar(idSede, hoy, hoy.plusDays(FarmaceuticoConstants.DIAS_ALERTA_CADUCIDAD))
+                .forEach(this::verificarNotificacionCaducidad);
     }
-    
+
     @Override
     public Long contarNotificacionesPendientes(Long idSede) {
-        return notificacionRepository.countBySedeIdSedeAndEstado(idSede, FarmaceuticoConstants.ESTADO_NOTIF_PENDIENTE);
+        return notificacionRepository.countBySedeIdSedeAndEstado(idSede, EstadoNotificacion.PENDIENTE);
     }
-    
+
     @Override
-    public Long contarNotificacionesPorTipo(Long idSede, String tipo) {
-        return notificacionRepository.findBySedeIdSedeAndTipo(idSede, tipo).stream().count();
+    public Long contarNotificacionesPorTipo(Long idSede, TipoNotificacion tipo) {
+        return (long) notificacionRepository.findBySedeIdSedeAndTipo(idSede, tipo).size();
     }
 }

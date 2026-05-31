@@ -1,14 +1,7 @@
 package com.proyecto.core.orden.domain.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import com.proyecto.core.medicamento.domain.model.Medicamento;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
@@ -17,6 +10,9 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "detalle_orden")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class DetalleOrden {
 
     @Id
@@ -37,22 +33,7 @@ public class DetalleOrden {
     @Column(nullable = false)
     private Integer cantidad;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 30)
-    private String estado = "PENDIENTE";
-
-    // Getters y Setters
-    public Long getIdDetalle() { return idDetalle; }
-    public void setIdDetalle(Long idDetalle) { this.idDetalle = idDetalle; }
-
-    public Orden getOrden() { return orden; }
-    public void setOrden(Orden orden) { this.orden = orden; }
-
-    public Medicamento getMedicamento() { return medicamento; }
-    public void setMedicamento(Medicamento medicamento) { this.medicamento = medicamento; }
-
-    public Integer getCantidad() { return cantidad; }
-    public void setCantidad(Integer cantidad) { this.cantidad = cantidad; }
-
-    public String getEstado() { return estado; }
-    public void setEstado(String estado) { this.estado = estado; }
+    private EstadoDetalle estado = EstadoDetalle.PENDIENTE;
 }

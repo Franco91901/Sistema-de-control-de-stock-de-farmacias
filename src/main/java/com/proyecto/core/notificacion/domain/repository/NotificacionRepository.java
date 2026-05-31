@@ -1,6 +1,8 @@
 package com.proyecto.core.notificacion.domain.repository;
 
+import com.proyecto.core.notificacion.domain.model.EstadoNotificacion;
 import com.proyecto.core.notificacion.domain.model.Notificacion;
+import com.proyecto.core.notificacion.domain.model.TipoNotificacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,29 +13,22 @@ import java.util.List;
 
 @Repository
 public interface NotificacionRepository extends JpaRepository<Notificacion, Long> {
-    
-    // Buscar notificaciones por sede
+
     List<Notificacion> findBySedeIdSedeOrderByFechaDesc(Long idSede);
-    
-    // Buscar notificaciones por sede y estado
-    List<Notificacion> findBySedeIdSedeAndEstado(Long idSede, String estado);
-    
-    // Buscar notificaciones por tipo
-    List<Notificacion> findBySedeIdSedeAndTipo(Long idSede, String tipo);
-    
-    // Buscar notificaciones pendientes por sede
-    List<Notificacion> findBySedeIdSedeAndEstadoOrderByFechaDesc(Long idSede, String estado);
-    
-    // Buscar notificaciones recientes (últimos 7 días)
+
+    List<Notificacion> findBySedeIdSedeAndEstado(Long idSede, EstadoNotificacion estado);
+
+    List<Notificacion> findBySedeIdSedeAndTipo(Long idSede, TipoNotificacion tipo);
+
+    List<Notificacion> findBySedeIdSedeAndEstadoOrderByFechaDesc(Long idSede, EstadoNotificacion estado);
+
     @Query("SELECT n FROM Notificacion n WHERE n.sede.idSede = :idSede AND n.fecha >= :fechaInicio ORDER BY n.fecha DESC")
     List<Notificacion> findNotificacionesRecientes(
         @Param("idSede") Long idSede,
         @Param("fechaInicio") LocalDateTime fechaInicio
     );
-    
-    // Contar notificaciones pendientes por sede
-    Long countBySedeIdSedeAndEstado(Long idSede, String estado);
-    
-    // Buscar notificaciones por medicamento
+
+    Long countBySedeIdSedeAndEstado(Long idSede, EstadoNotificacion estado);
+
     List<Notificacion> findByMedicamentoIdMedicamento(Long idMedicamento);
 }

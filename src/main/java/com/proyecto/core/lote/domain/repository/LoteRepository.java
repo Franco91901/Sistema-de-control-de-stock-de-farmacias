@@ -12,29 +12,28 @@ import java.util.Optional;
 
 @Repository
 public interface LoteRepository extends JpaRepository<Lote, Long> {
-    
-    // Buscar lotes por medicamento
+
     List<Lote> findByMedicamentoIdMedicamento(Long idMedicamento);
-    
-    // Buscar lotes por sede (a través del medicamento)
-    @Query("SELECT l FROM Lote l WHERE l.medicamento.sede.idSede = :idSede")
+
+    List<Lote> findBySedeIdSede(Long idSede);
+
+    @Query("SELECT l FROM Lote l WHERE l.sede.idSede = :idSede")
     List<Lote> findBySedeId(@Param("idSede") Long idSede);
-    
-    // Buscar lotes próximos a caducar (ej: en los próximos 30 días)
-    @Query("SELECT l FROM Lote l WHERE l.medicamento.sede.idSede = :idSede AND l.fechaCaducidad BETWEEN :hoy AND :fechaLimite")
+
+    @Query("SELECT l FROM Lote l WHERE l.sede.idSede = :idSede AND l.fechaCaducidad BETWEEN :hoy AND :fechaLimite")
     List<Lote> findLotesProximosCaducar(
         @Param("idSede") Long idSede,
         @Param("hoy") LocalDate hoy,
         @Param("fechaLimite") LocalDate fechaLimite
     );
-    
-    // Sumar stock total de todos los lotes de un medicamento
+
+    @Query("SELECT COALESCE(SUM(l.stockLote), 0) FROM Lote l WHERE l.medicamento.idMedicamento = :idMedicamento AND l.sede.idSede = :idSede")
+    Integer sumStockByMedicamentoAndSede(@Param("idMedicamento") Long idMedicamento, @Param("idSede") Long idSede);
+
     @Query("SELECT COALESCE(SUM(l.stockLote), 0) FROM Lote l WHERE l.medicamento.idMedicamento = :idMedicamento")
     Integer sumStockByMedicamento(@Param("idMedicamento") Long idMedicamento);
-    
-    // Buscar lote por código
+
     Optional<Lote> findByCodigoLote(String codigoLote);
-    
-    // Eliminar lotes por medicamento
+
     void deleteByMedicamentoIdMedicamento(Long idMedicamento);
 }
