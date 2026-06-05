@@ -22,4 +22,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> findBySede_IdSede(Long idSede);
 
     List<Usuario> findBySede_Nombre(String nombreSede);
+
+    List<Usuario> findByActivoFalse();
 }

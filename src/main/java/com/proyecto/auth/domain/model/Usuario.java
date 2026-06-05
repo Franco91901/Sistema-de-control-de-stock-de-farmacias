@@ -63,7 +63,9 @@ public class Usuario implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + rol.getNombre()));
+        String name = rol.getNombre();
+        String authority = name.startsWith("ROLE_") ? name : "ROLE_" + name;
+        return List.of(new SimpleGrantedAuthority(authority));
     }
 
     @Override
@@ -71,5 +73,8 @@ public class Usuario implements UserDetails {
 
     @Override
     public String getUsername() { return email; }
+
+    @Override
+    public boolean isEnabled() { return Boolean.TRUE.equals(activo); }
 
 }

@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -25,6 +26,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponseDTO>> login(@Valid @RequestBody LoginRequestDTO dto) {
@@ -36,18 +38,25 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponseDTO>> register(@Valid @RequestBody RegisterRequestDTO dto) {
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequestDTO dto) {
         authService.register(dto);
-        Map<String, String> tokenMap = authService.login(new LoginRequestDTO(dto.email(), dto.password()));
-        String token = tokenMap.get("access-token");
-        Usuario usuario = usuarioRepository.findByEmail(dto.email()).orElseThrow();
-        UsuarioResponseDTO usuarioDTO = UsuarioMapper.toResponseDTO(usuario);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Usuario registrado", new AuthResponseDTO(usuarioDTO, token)));
+                .body(ApiResponse.ok("Registro exitoso. Tu cuenta está pendiente de aprobación por el administrador.", null));
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UsuarioResponseDTO>> me( @AuthenticationPrincipal Usuario usuario) {
+    public ResponseEntity<ApiResponse<UsuarioResponseDTO>> me(@AuthenticationPrincipal Usuario usuario) {
         return ResponseEntity.ok(ApiResponse.ok(UsuarioMapper.toResponseDTO(usuario)));
+    }
+
+    /** TEMPORAL — eliminar después de confirmar que el admin puede loguearse */
+    @GetMapping("/dev/fix-admin")
+    public ResponseEntity<String> fixAdmin() {
+        return usuarioRepository.findByEmail("admin@farmacia.pe").map(admin -> {
+            admin.setPassword(passwordEncoder.encode("password"));
+            admin.setActivo(true);
+            usuarioRepository.save(admin);
+            return ResponseEntity.ok("Admin reseteado. Usa: admin@farmacia.pe / password");
+        }).orElse(ResponseEntity.ok("Usuario admin@farmacia.pe no encontrado en la BD"));
     }
 }

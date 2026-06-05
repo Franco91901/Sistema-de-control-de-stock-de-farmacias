@@ -91,6 +91,21 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuarioRepository.delete(findOrThrow(email));
     }
 
+    @Override
+    public UsuarioResponseDTO aprobarUsuario(String email) {
+        Usuario usuario = findOrThrow(email);
+        usuario.setActivo(true);
+        usuarioRepository.save(usuario);
+        return UsuarioMapper.toResponseDTO(usuario);
+    }
+
+    @Override
+    public List<UsuarioResponseDTO> listarPendientes() {
+        return usuarioRepository.findByActivoFalse().stream()
+                .map(UsuarioMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     private Usuario findOrThrow(String email) {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.USUARIO_NO_ENCONTRADO));

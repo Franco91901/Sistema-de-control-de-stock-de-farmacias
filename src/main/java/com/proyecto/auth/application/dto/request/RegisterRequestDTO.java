@@ -20,6 +20,8 @@ public record RegisterRequestDTO(
 
         @Pattern(regexp = "\\d{8}", message = "El DNI debe tener 8 dígitos")
         String dni,
+
         Integer rolId,
+
         Long sedeId
 ) {}

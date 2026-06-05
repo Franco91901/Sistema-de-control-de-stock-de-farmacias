@@ -53,4 +53,14 @@ public class AdminUsuarioController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @GetMapping("/pendientes")
+    public ResponseEntity<ApiResponse<List<UsuarioResponseDTO>>> pendientes() {
+        return ResponseEntity.ok(ApiResponse.ok(usuarioService.listarPendientes()));
+    }
+
+    @PatchMapping("/{email}/aprobar")
+    public ResponseEntity<ApiResponse<UsuarioResponseDTO>> aprobar(@PathVariable String email) {
+        return ResponseEntity.ok(ApiResponse.ok(usuarioService.aprobarUsuario(email)));
+    }
 }

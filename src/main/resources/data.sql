@@ -1,9 +1,21 @@
 -- ============================================================
 -- DATA.SQL  —  Farmacia Multisede · Datos iniciales de prueba
--- Contraseña de todos los usuarios: "password"
--- NOTA: si el login falla, verificar que getAuthorities() en
---       Usuario retorne "ROLE_ADMIN" (con prefijo). Si retorna
---       solo "ADMIN", cambiar los valores de la tabla rol.
+--
+-- *** CREDENCIALES DE ACCESO (todos usan password: "password") ***
+--
+--   ADMINISTRADOR
+--     Email   : admin@farmacia.pe
+--     Password: password
+--
+--   FARMACÉUTICOS DE PRUEBA
+--     farmac1@farmacia.pe  →  Sede Central
+--     farmac2@farmacia.pe  →  Sede Miraflores
+--     farmac3@farmacia.pe  →  Sede San Isidro
+--
+--   GESTOR
+--     gestor@farmacia.pe   →  Sede Central
+--
+-- *** IMPORTANTE: el admin crea nuevos usuarios desde /admin ***
 -- ============================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -17,6 +29,9 @@ INSERT IGNORE INTO rol (id_rol, nombre) VALUES
 (3, 'ROLE_FARMACEUTICO'),
 (4, 'ROLE_TRANSPORTISTA');
 
+-- ------------------------------------------------------------
+-- SEDES
+-- ------------------------------------------------------------
 -- ------------------------------------------------------------
 -- SEDES
 -- ------------------------------------------------------------
@@ -46,13 +61,13 @@ INSERT IGNORE INTO medicamento (id_medicamento, nombre, descripcion) VALUES
 -- USUARIOS  (contraseña: "password")
 -- ------------------------------------------------------------
 INSERT IGNORE INTO usuario (id_usuario, username, nombre, apellido, email, password, telefono, dni, activo, fecha_creacion, id_rol, id_sede) VALUES
-(1, 'admin',         'Carlos', 'Mendoza', 'admin@farmacia.pe',         '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '987654321', '12345678', 1, '2024-01-01 08:00:00', 1, NULL),
-(2, 'gestor',        'María',  'Torres',  'gestor@farmacia.pe',        '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '987654322', '23456789', 1, '2024-01-01 08:00:00', 2, NULL),
-(3, 'transportista', 'Luis',   'García',  'transportista@farmacia.pe', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '987654323', '34567890', 1, '2024-01-01 08:00:00', 4, NULL),
-(4, 'farmac1',       'Ana',    'Quispe',  'farmac1@farmacia.pe',       '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '987654324', '45678901', 1, '2024-01-01 08:00:00', 3, 1),
-(5, 'farmac2',       'Pedro',  'Vargas',  'farmac2@farmacia.pe',       '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '987654325', '56789012', 1, '2024-01-01 08:00:00', 3, 2),
-(6, 'farmac3',       'Rosa',   'Mamani',  'farmac3@farmacia.pe',       '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '987654326', '67890123', 1, '2024-01-01 08:00:00', 3, 3),
-(7, 'gestor2',       'Jorge',  'Ramos',   'gestor2@farmacia.pe',       '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '987654327', '78901234', 1, '2024-01-01 08:00:00', 2, NULL);
+(1, 'admin',         'Carlos', 'Mendoza', 'admin@farmacia.pe',         '$2a$12$qxt0EGSyeEkEeJHLKJ04u.S/RBy.QxPQBJlTI2ShN9uiw6iU0Gy2u', '987654321', '12345678', 1, '2024-01-01 08:00:00', 1, 1),
+(2, 'gestor',        'María',  'Torres',  'gestor@farmacia.pe',        '$2a$12$qxt0EGSyeEkEeJHLKJ04u.S/RBy.QxPQBJlTI2ShN9uiw6iU0Gy2u', '987654322', '23456789', 1, '2024-01-01 08:00:00', 2, 1),
+(3, 'transportista', 'Luis',   'García',  'transportista@farmacia.pe', '$2a$12$qxt0EGSyeEkEeJHLKJ04u.S/RBy.QxPQBJlTI2ShN9uiw6iU0Gy2u', '987654323', '34567890', 1, '2024-01-01 08:00:00', 4, 1),
+(4, 'farmac1',       'Ana',    'Quispe',  'farmac1@farmacia.pe',       '$2a$12$qxt0EGSyeEkEeJHLKJ04u.S/RBy.QxPQBJlTI2ShN9uiw6iU0Gy2u', '987654324', '45678901', 1, '2024-01-01 08:00:00', 3, 1),
+(5, 'farmac2',       'Pedro',  'Vargas',  'farmac2@farmacia.pe',       '$2a$12$qxt0EGSyeEkEeJHLKJ04u.S/RBy.QxPQBJlTI2ShN9uiw6iU0Gy2u', '987654325', '56789012', 1, '2024-01-01 08:00:00', 3, 2),
+(6, 'farmac3',       'Rosa',   'Mamani',  'farmac3@farmacia.pe',       '$2a$12$qxt0EGSyeEkEeJHLKJ04u.S/RBy.QxPQBJlTI2ShN9uiw6iU0Gy2u', '987654326', '67890123', 1, '2024-01-01 08:00:00', 3, 3),
+(7, 'gestor2',       'Jorge',  'Ramos',   'gestor2@farmacia.pe',       '$2a$12$qxt0EGSyeEkEeJHLKJ04u.S/RBy.QxPQBJlTI2ShN9uiw6iU0Gy2u', '987654327', '78901234', 1, '2024-01-01 08:00:00', 2, 2);
 
 -- ------------------------------------------------------------
 -- MEDICAMENTO_SEDE  (stock por (medicamento, sede))

@@ -13,4 +13,6 @@ public interface UsuarioService {
     UsuarioResponseDTO buscarPorEmail(String email);
     UsuarioResponseDTO actualizarUsuario(String email, RegisterRequestDTO dto);
     void eliminarUsuario(String email);
+    UsuarioResponseDTO aprobarUsuario(String email);
+    List<UsuarioResponseDTO> listarPendientes();
 }
