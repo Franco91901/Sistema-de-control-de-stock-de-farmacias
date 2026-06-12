@@ -75,19 +75,19 @@ INSERT IGNORE INTO usuario (id_usuario, username, nombre, apellido, email, passw
 -- Sede 2 Miraflores → stock medio
 -- Sede 3 San Isidro → varios con stock bajo/crítico
 -- ------------------------------------------------------------
-INSERT IGNORE INTO medicamento_sede (id, id_medicamento, id_sede, stock_total) VALUES
+INSERT IGNORE INTO medicamento_sede (id, id_medicamento, id_sede, stock_total, precio) VALUES
 -- Sede 1
-(1,  1,  1, 150), (2,  2,  1, 140), (3,  3,  1,  75), (4,  4,  1, 200),
-(5,  5,  1, 180), (6,  6,  1, 160), (7,  7,  1, 100), (8,  8,  1,  80),
-(9,  9,  1,  90), (10, 10, 1,  45), (11, 11, 1,  40), (12, 12, 1,  60),
+(1,  1,  1, 150, 5.50), (2,  2,  1, 140, 8.00), (3,  3,  1,  75, 12.50), (4,  4,  1, 200, 15.00),
+(5,  5,  1, 180, 20.00), (6,  6,  1, 160, 18.00), (7,  7,  1, 100, 25.00), (8,  8,  1,  80, 10.00),
+(9,  9,  1,  90, 22.00), (10, 10, 1,  45, 30.00), (11, 11, 1,  40, 35.00), (12, 12, 1,  60, 45.00),
 -- Sede 2
-(13, 1,  2, 100), (14, 2,  2,  90), (15, 3,  2,  70), (16, 4,  2, 150),
-(17, 5,  2, 120), (18, 6,  2, 100), (19, 7,  2,  70), (20, 8,  2,  60),
-(21, 9,  2,  50), (22, 10, 2,  30), (23, 11, 2,  20), (24, 12, 2,  40),
+(13, 1,  2, 100, 5.50), (14, 2,  2,  90, 8.00), (15, 3,  2,  70, 12.50), (16, 4,  2, 150, 15.00),
+(17, 5,  2, 120, 20.00), (18, 6,  2, 100, 18.00), (19, 7,  2,  70, 25.00), (20, 8,  2,  60, 10.00),
+(21, 9,  2,  50, 22.00), (22, 10, 2,  30, 30.00), (23, 11, 2,  20, 35.00), (24, 12, 2,  40, 45.00),
 -- Sede 3  (★ = bajo stock para disparar notificaciones)
-(25, 1,  3,  30), (26, 2,  3,  12), (27, 3,  3,   8), (28, 4,  3,  50),
-(29, 5,  3,  25), (30, 6,  3,  20), (31, 7,  3,   4), (32, 8,  3,  40),
-(33, 9,  3,   9), (34, 10, 3,   3), (35, 11, 3,   7), (36, 12, 3,  15);
+(25, 1,  3,  30, 5.50), (26, 2,  3,  12, 8.00), (27, 3,  3,   8, 12.50), (28, 4,  3,  50, 15.00),
+(29, 5,  3,  25, 20.00), (30, 6,  3,  20, 18.00), (31, 7,  3,   4, 25.00), (32, 8,  3,  40, 10.00),
+(33, 9,  3,   9, 22.00), (34, 10, 3,   3, 30.00), (35, 11, 3,   7, 35.00), (36, 12, 3,  15, 45.00);
 
 -- ------------------------------------------------------------
 -- LOTES
@@ -202,5 +202,25 @@ INSERT IGNORE INTO notificacion (id_notificacion, mensaje, fecha, estado, tipo, 
 (13, 'Próximo a caducar: Insulina NPH, lote LOT-202606-123A (25/06/2026, 15u)',     '2026-05-31 07:06:00', 'PENDIENTE', 'PROXIMO_CADUCAR', 12, 3),
 -- Ya atendida (orden generada desde esta notificación)
 (14, 'Stock crítico: Amoxicilina 500mg en Sede San Isidro — orden de transferencia generada', '2026-05-09 10:00:00', 'ATENDIDA', 'BAJO_STOCK', 3, 3);
+
+-- ------------------------------------------------------------
+-- VENTAS (ejemplo)
+-- ------------------------------------------------------------
+INSERT IGNORE INTO venta (id_venta, id_usuario, id_sede, fecha, total) VALUES
+(1, 4, 1, '2026-05-28 10:30:00', 27.50),
+(2, 4, 1, '2026-05-29 15:45:00', 95.00),
+(3, 5, 2, '2026-05-30 09:15:00', 42.00);
+
+INSERT IGNORE INTO detalle_venta (id_detalle, id_venta, id_medicamento, cantidad, precio_unitario, subtotal) VALUES
+-- Venta 1 (farmac1 - Sede Central): 3 Paracetamol + 2 Ibuprofeno
+(1, 1, 1, 3, 5.50, 16.50),
+(2, 1, 2, 2, 8.00, 16.00),
+-- Venta 2 (farmac1 - Sede Central): 2 Omeprazol + 1 Losartán + 1 Atorvastatina
+(3, 2, 4, 2, 15.00, 30.00),
+(4, 2, 5, 1, 20.00, 20.00),
+(5, 2, 7, 1, 25.00, 25.00),
+-- Venta 3 (farmac2 - Sede Miraflores): 4 Paracetamol + 2 Ibuprofeno
+(6, 3, 1, 4, 5.50, 22.00),
+(7, 3, 2, 2, 8.00, 16.00);
 
 SET FOREIGN_KEY_CHECKS = 1;

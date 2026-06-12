@@ -27,9 +27,13 @@ public class MedicamentoSede {
     @Column(name = "stock_total", nullable = false)
     private Integer stockTotal = 0;
 
+    @Column(name = "precio", nullable = false)
+    private java.math.BigDecimal precio = java.math.BigDecimal.ZERO;
+
     public MedicamentoSede(Medicamento medicamento, Sede sede) {
         this.medicamento = medicamento;
         this.sede = sede;
         this.stockTotal = 0;
+        this.precio = java.math.BigDecimal.ZERO;
     }
 }

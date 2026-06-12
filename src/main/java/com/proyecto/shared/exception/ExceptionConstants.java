@@ -11,4 +11,5 @@ public class ExceptionConstants {
     public static final String NOTIFICACION_NO_ENCONTRADA = "Notificación no encontrada";
     public static final String ORDEN_NO_ENCONTRADA     = "Orden no encontrada";
     public static final String ROL_NO_ENCONTRADO       = "Rol no encontrado";
+    public static final String VENTA_NO_ENCONTRADA     = "Venta no encontrada";
 }

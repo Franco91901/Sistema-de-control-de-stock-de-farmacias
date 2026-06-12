@@ -248,6 +248,7 @@
 									href="/farmaceutico/stock" class="btn btn-outline-success">
 									<i class="fas fa-boxes me-2"></i>Gestionar Stock
 								</a>
+
 								<a th:if="${userRole == 'ADMINISTRADOR' || userRole == 'FARMACEUTICO' || userRole == 'GESTOR'}"
 									href="/gestor/notificaciones" class="btn btn-outline-info">
 									<i class="fas fa-bell me-2"></i>Ver Notificaciones
