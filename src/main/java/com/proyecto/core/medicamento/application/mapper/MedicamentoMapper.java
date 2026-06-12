@@ -14,6 +14,7 @@ public class MedicamentoMapper {
         Medicamento medicamento = new Medicamento();
         medicamento.setNombre(dto.nombre());
         medicamento.setDescripcion(dto.descripcion());
+        if (dto.precioVenta() != null) medicamento.setPrecioVenta(dto.precioVenta());
         return medicamento;
     }
 
@@ -32,6 +33,7 @@ public class MedicamentoMapper {
             medicamento.getIdMedicamento(),
             medicamento.getNombre(),
             medicamento.getDescripcion(),
+            medicamento.getPrecioVenta(),
             medSede.getStockTotal(),
             idSede,
             nombreSede,
@@ -45,5 +47,6 @@ public class MedicamentoMapper {
         if (medicamento == null || dto == null) return;
         medicamento.setNombre(dto.nombre());
         medicamento.setDescripcion(dto.descripcion());
+        if (dto.precioVenta() != null) medicamento.setPrecioVenta(dto.precioVenta());
     }
 }

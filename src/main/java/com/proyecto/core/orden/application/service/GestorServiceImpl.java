@@ -143,6 +143,67 @@ public class GestorServiceImpl implements GestorService {
     }
 
     @Override
+    @Transactional
+    public Orden crearOrden(com.proyecto.core.orden.application.dto.OrdenRequestDTO dto, Long idGestor) {
+        Usuario usuario = usuarioRepository.findById(idGestor)
+            .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.USUARIO_NO_ENCONTRADO));
+        com.proyecto.core.sede.domain.model.Sede sede = sedeRepository.findById(dto.idSede())
+            .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.SEDE_NO_ENCONTRADA));
+
+        Orden orden = new Orden();
+        orden.setUsuario(usuario);
+        orden.setSede(sede);
+        orden.setTipo(com.proyecto.core.orden.domain.model.TipoOrden.valueOf(dto.tipo()));
+        orden.setEstado(com.proyecto.core.orden.domain.model.EstadoOrden.PENDIENTE);
+        orden.setFecha(LocalDateTime.now());
+
+        if (dto.idSedeDestino() != null) {
+            com.proyecto.core.sede.domain.model.Sede sedeDestino = sedeRepository.findById(dto.idSedeDestino())
+                .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.SEDE_NO_ENCONTRADA));
+            orden.setSedeDestino(sedeDestino);
+        }
+
+        orden = ordenRepository.save(orden);
+
+        for (com.proyecto.core.orden.application.dto.OrdenItemRequestDTO item : dto.items()) {
+            Medicamento med = medicamentoRepository.findById(item.idMedicamento())
+                .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.MEDICAMENTO_NO_ENCONTRADO));
+            DetalleOrden detalle = new DetalleOrden();
+            detalle.setOrden(orden);
+            detalle.setMedicamento(med);
+            detalle.setCantidad(item.cantidad());
+            detalle.setEstado(com.proyecto.core.orden.domain.model.EstadoDetalle.PENDIENTE);
+            detalleOrdenRepository.save(detalle);
+        }
+
+        return orden;
+    }
+
+    @Override
+    @Transactional
+    public void aprobarOrden(Long idOrden) {
+        Orden orden = ordenRepository.findById(idOrden)
+            .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.ORDEN_NO_ENCONTRADA));
+        if (orden.getEstado() != com.proyecto.core.orden.domain.model.EstadoOrden.PENDIENTE) {
+            throw new RuntimeException("Solo se pueden aprobar órdenes en estado PENDIENTE");
+        }
+        orden.setEstado(com.proyecto.core.orden.domain.model.EstadoOrden.APROBADA);
+        ordenRepository.save(orden);
+    }
+
+    @Override
+    @Transactional
+    public void rechazarOrden(Long idOrden) {
+        Orden orden = ordenRepository.findById(idOrden)
+            .orElseThrow(() -> new EntityNotFoundException(ExceptionConstants.ORDEN_NO_ENCONTRADA));
+        if (orden.getEstado() != com.proyecto.core.orden.domain.model.EstadoOrden.PENDIENTE) {
+            throw new RuntimeException("Solo se pueden rechazar órdenes en estado PENDIENTE");
+        }
+        orden.setEstado(com.proyecto.core.orden.domain.model.EstadoOrden.RECHAZADA);
+        ordenRepository.save(orden);
+    }
+
+    @Override
     public List<Orden> listarOrdenesPorGestor(Long idGestor) {
         return ordenRepository.findByUsuarioIdUsuario(idGestor);
     }

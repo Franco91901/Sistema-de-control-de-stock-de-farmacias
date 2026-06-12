@@ -43,19 +43,33 @@ INSERT IGNORE INTO sede (id_sede, nombre, direccion) VALUES
 -- ------------------------------------------------------------
 -- MEDICAMENTOS
 -- ------------------------------------------------------------
-INSERT IGNORE INTO medicamento (id_medicamento, nombre, descripcion) VALUES
-(1,  'Paracetamol 500mg',              'Analgésico y antipirético de uso común'),
-(2,  'Ibuprofeno 400mg',               'Antiinflamatorio no esteroideo'),
-(3,  'Amoxicilina 500mg',              'Antibiótico de amplio espectro'),
-(4,  'Omeprazol 20mg',                 'Inhibidor de la bomba de protones'),
-(5,  'Losartán 50mg',                  'Antihipertensivo antagonista de angiotensina II'),
-(6,  'Metformina 850mg',               'Hipoglucemiante oral para diabetes tipo 2'),
-(7,  'Atorvastatina 20mg',             'Hipolipemiante para control del colesterol'),
-(8,  'Diclofenaco 75mg',               'Antiinflamatorio y analgésico inyectable'),
-(9,  'Azitromicina 500mg',             'Antibiótico macrólido de amplio espectro'),
-(10, 'Clonazepam 2mg',                 'Anticonvulsivante y ansiolítico'),
-(11, 'Salbutamol inhalador 200 dosis', 'Broncodilatador para asma y EPOC'),
-(12, 'Insulina NPH 100UI/mL',          'Insulina de acción intermedia para diabetes');
+INSERT IGNORE INTO medicamento (id_medicamento, nombre, descripcion, precio_venta) VALUES
+(1,  'Paracetamol 500mg',              'Caja x 20 Tabs',            5.50),
+(2,  'Ibuprofeno 400mg',               'Caja x 20 Tabs',            8.00),
+(3,  'Amoxicilina 500mg',              'Caja x 12 Caps',           15.00),
+(4,  'Omeprazol 20mg',                 'Caja x 14 Caps',           10.00),
+(5,  'Losartán 50mg',                  'Caja x 30 Tabs',           12.00),
+(6,  'Metformina 850mg',               'Caja x 30 Tabs',            9.50),
+(7,  'Atorvastatina 20mg',             'Caja x 30 Tabs',           18.00),
+(8,  'Diclofenaco 75mg',               'Caja x 3 Amp',              6.50),
+(9,  'Azitromicina 500mg',             'Caja x 3 Tabs',            25.00),
+(10, 'Clonazepam 2mg',                 'Caja x 30 Tabs',           12.00),
+(11, 'Salbutamol inhalador 200 dosis', 'Inhalador 200 dosis',      35.00),
+(12, 'Insulina NPH 100UI/mL',          'Vial 10mL',                65.00);
+
+-- Asegurar precios en registros existentes (por si el INSERT IGNORE ya corrió sin precio_venta)
+UPDATE medicamento SET precio_venta = 5.50  WHERE id_medicamento = 1  AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 8.00  WHERE id_medicamento = 2  AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 15.00 WHERE id_medicamento = 3  AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 10.00 WHERE id_medicamento = 4  AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 12.00 WHERE id_medicamento = 5  AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 9.50  WHERE id_medicamento = 6  AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 18.00 WHERE id_medicamento = 7  AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 6.50  WHERE id_medicamento = 8  AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 25.00 WHERE id_medicamento = 9  AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 12.00 WHERE id_medicamento = 10 AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 35.00 WHERE id_medicamento = 11 AND precio_venta = 0;
+UPDATE medicamento SET precio_venta = 65.00 WHERE id_medicamento = 12 AND precio_venta = 0;
 
 -- ------------------------------------------------------------
 -- USUARIOS  (contraseña: "password")

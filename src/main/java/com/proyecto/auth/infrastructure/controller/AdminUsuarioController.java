@@ -1,8 +1,12 @@
 package com.proyecto.auth.infrastructure.controller;
 
 import com.proyecto.auth.application.dto.request.RegisterRequestDTO;
+import com.proyecto.auth.application.dto.response.AdminEstadisticasDTO;
 import com.proyecto.auth.application.dto.response.UsuarioResponseDTO;
 import com.proyecto.auth.application.service.UsuarioService;
+import com.proyecto.core.orden.domain.model.EstadoOrden;
+import com.proyecto.core.orden.domain.repository.OrdenRepository;
+import com.proyecto.core.sede.domain.repository.SedeRepository;
 import com.proyecto.shared.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +23,21 @@ import java.util.List;
 public class AdminUsuarioController {
 
     private final UsuarioService usuarioService;
+    private final OrdenRepository ordenRepository;
+    private final SedeRepository sedeRepository;
+
+    @GetMapping("/estadisticas")
+    public ResponseEntity<ApiResponse<AdminEstadisticasDTO>> estadisticas() {
+        List<UsuarioResponseDTO> usuarios = usuarioService.listarUsuarios();
+        long activos = usuarios.stream().filter(u -> Boolean.TRUE.equals(u.activo())).count();
+        long pendientes = ordenRepository.findAll().stream()
+            .filter(o -> o.getEstado() == EstadoOrden.PENDIENTE).count();
+        long totalOrdenes = ordenRepository.count();
+        long totalSedes = sedeRepository.count();
+        return ResponseEntity.ok(ApiResponse.ok(
+            new AdminEstadisticasDTO(activos, usuarios.size(), totalSedes, pendientes, totalOrdenes)
+        ));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<UsuarioResponseDTO>>> listar() {

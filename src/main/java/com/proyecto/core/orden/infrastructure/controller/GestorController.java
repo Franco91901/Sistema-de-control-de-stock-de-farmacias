@@ -4,6 +4,7 @@ import com.proyecto.core.notificacion.application.dto.NotificacionResponseDTO;
 import com.proyecto.core.notificacion.application.service.NotificacionService;
 import com.proyecto.core.orden.application.dto.DetalleItemDTO;
 import com.proyecto.core.orden.application.dto.OrdenDetalleDTO;
+import com.proyecto.core.orden.application.dto.OrdenRequestDTO;
 import com.proyecto.core.orden.application.dto.OrdenResponseDTO;
 import com.proyecto.core.orden.application.mapper.OrdenMapper;
 import com.proyecto.core.orden.application.service.GestorService;
@@ -14,6 +15,7 @@ import com.proyecto.shared.exception.EntityNotFoundException;
 import com.proyecto.shared.exception.ExceptionConstants;
 import com.proyecto.shared.security.AuthContext;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
@@ -60,6 +62,25 @@ public class GestorController {
     @GetMapping("/notificaciones/{id}")
     public ResponseEntity<ApiResponse<NotificacionResponseDTO>> detalleNotificacion(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(notificacionService.obtenerNotificacionPorId(id)));
+    }
+
+    @PostMapping("/ordenes")
+    public ResponseEntity<ApiResponse<Long>> crearOrden(@Valid @RequestBody OrdenRequestDTO dto) {
+        Orden orden = gestorService.crearOrden(dto, authContext.getIdUsuario());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Orden creada", orden.getIdOrden()));
+    }
+
+    @PutMapping("/ordenes/{id}/aprobar")
+    public ResponseEntity<ApiResponse<Void>> aprobarOrden(@PathVariable Long id) {
+        gestorService.aprobarOrden(id);
+        return ResponseEntity.ok(ApiResponse.ok("Orden aprobada", null));
+    }
+
+    @PutMapping("/ordenes/{id}/rechazar")
+    public ResponseEntity<ApiResponse<Void>> rechazarOrden(@PathVariable Long id) {
+        gestorService.rechazarOrden(id);
+        return ResponseEntity.ok(ApiResponse.ok("Orden rechazada", null));
     }
 
     @PostMapping("/ordenes/generar")

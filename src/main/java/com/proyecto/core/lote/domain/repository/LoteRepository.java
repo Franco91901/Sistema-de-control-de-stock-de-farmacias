@@ -36,4 +36,7 @@ public interface LoteRepository extends JpaRepository<Lote, Long> {
     Optional<Lote> findByCodigoLote(String codigoLote);
 
     void deleteByMedicamentoIdMedicamento(Long idMedicamento);
+
+    @Query("SELECT l FROM Lote l WHERE l.medicamento.idMedicamento = :idMedicamento AND l.sede.idSede = :idSede AND l.stockLote > 0 ORDER BY l.fechaCaducidad ASC")
+    List<Lote> findLotesDisponiblesFIFO(@Param("idMedicamento") Long idMedicamento, @Param("idSede") Long idSede);
 }

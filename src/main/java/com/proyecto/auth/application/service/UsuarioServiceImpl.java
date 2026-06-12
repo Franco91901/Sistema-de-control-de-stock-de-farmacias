@@ -16,7 +16,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -51,7 +50,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     public List<UsuarioResponseDTO> listarUsuarios() {
         return usuarioRepository.findAll().stream()
                 .map(UsuarioMapper::toResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -102,8 +101,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public List<UsuarioResponseDTO> listarPendientes() {
         return usuarioRepository.findByActivoFalse().stream()
-                .map(UsuarioMapper::toResponseDTO)
-                .collect(Collectors.toList());
+                .map(UsuarioMapper::toResponseDTO).toList();
     }
 
     private Usuario findOrThrow(String email) {

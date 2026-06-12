@@ -60,7 +60,7 @@ public class MedicamentoServiceImpl implements MedicamentoService {
         MedicamentoSede medSede = sedes.isEmpty() ? null : sedes.get(0);
         if (medSede == null) {
             return new MedicamentoResponseDTO(medicamento.getIdMedicamento(), medicamento.getNombre(),
-                    medicamento.getDescripcion(), 0, null, null, null, null, false);
+                    medicamento.getDescripcion(), medicamento.getPrecioVenta(), 0, null, null, null, null, false);
         }
         return medicamentoMapper.toResponseDTO(medSede);
     }
@@ -92,7 +92,7 @@ public class MedicamentoServiceImpl implements MedicamentoService {
         MedicamentoSede medSede = sedes.isEmpty() ? null : sedes.get(0);
         if (medSede == null) {
             return new MedicamentoResponseDTO(medicamento.getIdMedicamento(), medicamento.getNombre(),
-                    medicamento.getDescripcion(), 0, null, null, null, null, false);
+                    medicamento.getDescripcion(), medicamento.getPrecioVenta(), 0, null, null, null, null, false);
         }
         return medicamentoMapper.toResponseDTO(medSede);
     }
